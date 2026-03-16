@@ -13,6 +13,7 @@ on:
 
 permissions:
   contents: read
+  id-token: write
 
 concurrency:
   group: terraform-${{ github.ref }}
@@ -29,6 +30,12 @@ jobs:
       has_changes: ${{ steps.plan.outputs.has_changes }}
     steps:
       - uses: actions/checkout@v5
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::849279003196:role/github-homelab-terraform
+          aws-region: eu-west-1
+
       - uses: hashicorp/setup-terraform@v4
 
       - name: Format check
@@ -83,6 +90,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::849279003196:role/github-homelab-terraform
+          aws-region: us-east-1
+
       - uses: hashicorp/setup-terraform@v4
 
       - name: Download plan artifacts
