@@ -51,7 +51,7 @@ jobs:
         run: |
           set -euo pipefail
           set +e
-          terraform -chdir=terraform plan -input=false -no-color -detailed-exitcode -out=terraform/tfplan
+          terraform -chdir=terraform plan -input=false -no-color -detailed-exitcode -out=tfplan
           code=$?
           set -e
 
