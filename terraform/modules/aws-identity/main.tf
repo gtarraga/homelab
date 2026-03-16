@@ -1,10 +1,11 @@
+data "aws_caller_identity" "current" {}
+data "aws_region" "current" {}
+
 resource "aws_iam_openid_connect_provider" "github" {
   url             = "https://token.actions.githubusercontent.com"
   client_id_list  = ["sts.amazonaws.com"]
   thumbprint_list = ["6938fd4d98bab03faadb97b34396831e3780aea1"]
 }
-
-data "aws_caller_identity" "current" {}
 
 data "aws_iam_policy_document" "github_assume_role" {
   statement {
@@ -43,7 +44,7 @@ data "aws_iam_policy_document" "github_terraform_permissions" {
       "ssm:DeleteParameter",
       "ssm:DescribeParameters"
     ]
-    resources = ["arn:aws:ssm:${var.aws_region}:${data.aws_caller_identity.current.account_id}:parameter${var.ssm_path_prefix}*"]
+    resources = ["arn:aws:ssm:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:parameter${var.ssm_path_prefix}*"]
   }
   statement {
     effect    = "Allow"
@@ -60,8 +61,4 @@ resource "aws_iam_policy" "github_terraform_policy" {
 resource "aws_iam_role_policy_attachment" "github_terraform_attach" {
   role       = aws_iam_role.github_terraform.name
   policy_arn = aws_iam_policy.github_terraform_policy.arn
-}
-
-output "github_actions_role_arn" {
-  value = aws_iam_role.github_terraform.arn
 }

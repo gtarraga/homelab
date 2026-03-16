@@ -21,7 +21,6 @@ concurrency:
 
 env:
   TF_IN_AUTOMATION: "true"
-  TF_VAR_cloudflare_api_token: ${{ secrets.CLOUDFLARE_API_TOKEN }}
 
 jobs:
   plan:
@@ -41,48 +40,38 @@ jobs:
       - name: Format check
         run: terraform fmt -check -recursive terraform
 
-      - name: Terraform plan all modules
+      - name: Init
+        run: terraform -chdir=terraform init -input=false
+
+      - name: Validate
+        run: terraform -chdir=terraform validate
+
+      - name: Plan
         id: plan
         run: |
           set -euo pipefail
+          set +e
+          terraform -chdir=terraform plan -input=false -no-color -detailed-exitcode -out=terraform/tfplan
+          code=$?
+          set -e
 
-          mkdir -p /tmp/tfplans
-          : > /tmp/tfplans/changed_modules.txt
+          if [ "$code" -eq 1 ]; then
+            echo "Plan failed"
+            exit 1
+          fi
+
           has_changes="false"
-
-          for dir in terraform/*/; do
-            [ -d "$dir" ] || continue
-            echo "==> $dir"
-
-            module="$(basename "$dir")"
-            terraform -chdir="$dir" init -input=false
-            terraform -chdir="$dir" validate
-
-            set +e
-            terraform -chdir="$dir" plan -input=false -no-color -detailed-exitcode -out=tfplan
-            code=$?
-            set -e
-
-            if [ "$code" -eq 1 ]; then
-              echo "Plan failed in module: $module"
-              exit 1
-            fi
-
-            if [ "$code" -eq 2 ]; then
-              has_changes="true"
-              cp "$dir/tfplan" "/tmp/tfplans/${module}.tfplan"
-              echo "$module" >> /tmp/tfplans/changed_modules.txt
-            fi
-          done
-
+          if [ "$code" -eq 2 ]; then
+            has_changes="true"
+          fi
           echo "has_changes=$has_changes" >> "$GITHUB_OUTPUT"
 
-      - name: Upload plan artifacts
+      - name: Upload plan artifact
         if: steps.plan.outputs.has_changes == 'true'
         uses: actions/upload-artifact@v4
         with:
-          name: tfplans
-          path: /tmp/tfplans
+          name: tfplan
+          path: terraform/tfplan
 
   apply:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.plan.outputs.has_changes == 'true'
@@ -94,26 +83,18 @@ jobs:
       - uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: arn:aws:iam::849279003196:role/github-homelab-terraform
-          aws-region: us-east-1
+          aws-region: eu-west-1
 
       - uses: hashicorp/setup-terraform@v4
 
-      - name: Download plan artifacts
+      - name: Download plan artifact
         uses: actions/download-artifact@v4
         with:
-          name: tfplans
-          path: /tmp/tfplans
+          name: tfplan
+          path: terraform
 
-      - name: Terraform apply changed modules
-        run: |
-          set -euo pipefail
+      - name: Init
+        run: terraform -chdir=terraform init -input=false
 
-          while IFS= read -r module; do
-            [ -n "$module" ] || continue
-            dir="terraform/$module"
-            echo "==> $dir"
-
-            terraform -chdir="$dir" init -input=false
-            terraform -chdir="$dir" validate
-            terraform -chdir="$dir" apply -input=false -auto-approve "/tmp/tfplans/${module}.tfplan"
-          done < /tmp/tfplans/changed_modules.txt
+      - name: Apply
+        run: terraform -chdir=terraform apply -input=false -auto-approve tfplan

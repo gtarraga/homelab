@@ -1,7 +1,3 @@
-provider "cloudflare" {
-  api_token = var.cloudflare_api_token
-}
-
 data "cloudflare_zone" "stoneforge" {
   filter = {
     name = var.zone_name
