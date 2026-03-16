@@ -1,0 +1,18 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: podinfo
+  namespace: projects
+spec:
+  ingressClassName: traefik
+  rules:
+    - host: podinfo.192.168.1.147.nip.io
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: podinfo
+                port:
+                  number: 9898
