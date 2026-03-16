@@ -32,8 +32,8 @@ jobs:
 
       - uses: aws-actions/configure-aws-credentials@v6
         with:
-          role-to-assume: arn:aws:iam::849279003196:role/github-homelab-terraform
-          aws-region: eu-west-1
+          role-to-assume: ${{ vars.AWS_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
 
       - uses: hashicorp/setup-terraform@v4
 
@@ -41,7 +41,7 @@ jobs:
         run: terraform fmt -check -recursive terraform
 
       - name: Init
-        run: terraform -chdir=terraform init -input=false
+        run: terraform -chdir=terraform init -input=false -backend-config=backend.tfvars
 
       - name: Validate
         run: terraform -chdir=terraform validate
@@ -82,8 +82,8 @@ jobs:
 
       - uses: aws-actions/configure-aws-credentials@v6
         with:
-          role-to-assume: arn:aws:iam::849279003196:role/github-homelab-terraform
-          aws-region: eu-west-1
+          role-to-assume: ${{ vars.AWS_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
 
       - uses: hashicorp/setup-terraform@v4
 
@@ -94,7 +94,7 @@ jobs:
           path: terraform
 
       - name: Init
-        run: terraform -chdir=terraform init -input=false
+        run: terraform -chdir=terraform init -input=false -backend-config=backend.tfvars
 
       - name: Apply
         run: terraform -chdir=terraform apply -input=false -auto-approve tfplan

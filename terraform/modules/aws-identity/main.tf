@@ -1,6 +1,10 @@
 data "aws_caller_identity" "current" {}
 data "aws_region" "current" {}
 
+locals {
+  tfstate_bucket_arn = "arn:aws:s3:::homelab-tfstate-${data.aws_caller_identity.current.account_id}"
+}
+
 resource "aws_iam_openid_connect_provider" "github" {
   url             = "https://token.actions.githubusercontent.com"
   client_id_list  = ["sts.amazonaws.com"]
@@ -50,6 +54,19 @@ data "aws_iam_policy_document" "github_terraform_permissions" {
     effect    = "Allow"
     actions   = ["kms:Decrypt"]
     resources = ["*"]
+  }
+  statement {
+    effect = "Allow"
+    actions = [
+      "s3:GetObject",
+      "s3:PutObject",
+      "s3:DeleteObject",
+      "s3:ListBucket",
+    ]
+    resources = [
+      local.tfstate_bucket_arn,
+      "${local.tfstate_bucket_arn}/*",
+    ]
   }
 }
 
