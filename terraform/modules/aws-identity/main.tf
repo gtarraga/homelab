@@ -47,6 +47,9 @@ data "aws_iam_policy_document" "github_terraform_permissions" {
       "ssm:GetParametersByPath",
       "ssm:PutParameter",
       "ssm:DeleteParameter",
+      "ssm:ListTagsForResource",
+      "ssm:AddTagsToResource",
+      "ssm:RemoveTagsFromResource",
     ]
     resources = ["arn:aws:ssm:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:parameter${var.ssm_path_prefix}*"]
   }
