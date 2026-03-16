@@ -25,6 +25,8 @@ env:
 jobs:
   plan:
     runs-on: ubuntu-latest
+    outputs:
+      has_changes: ${{ steps.plan.outputs.has_changes }}
     steps:
       - uses: actions/checkout@v5
       - uses: hashicorp/setup-terraform@v4
@@ -33,30 +35,72 @@ jobs:
         run: terraform fmt -check -recursive terraform
 
       - name: Terraform plan all modules
+        id: plan
         run: |
           set -euo pipefail
+
+          mkdir -p /tmp/tfplans
+          : > /tmp/tfplans/changed_modules.txt
+          has_changes="false"
+
           for dir in terraform/*/; do
             [ -d "$dir" ] || continue
             echo "==> $dir"
+
+            module="$(basename "$dir")"
             terraform -chdir="$dir" init -input=false
             terraform -chdir="$dir" validate
-            terraform -chdir="$dir" plan -input=false -no-color
+
+            set +e
+            terraform -chdir="$dir" plan -input=false -no-color -detailed-exitcode -out=tfplan
+            code=$?
+            set -e
+
+            if [ "$code" -eq 1 ]; then
+              echo "Plan failed in module: $module"
+              exit 1
+            fi
+
+            if [ "$code" -eq 2 ]; then
+              has_changes="true"
+              cp "$dir/tfplan" "/tmp/tfplans/${module}.tfplan"
+              echo "$module" >> /tmp/tfplans/changed_modules.txt
+            fi
           done
 
+          echo "has_changes=$has_changes" >> "$GITHUB_OUTPUT"
+
+      - name: Upload plan artifacts
+        if: steps.plan.outputs.has_changes == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: tfplans
+          path: /tmp/tfplans
+
   apply:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.plan.outputs.has_changes == 'true'
     needs: plan
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
       - uses: hashicorp/setup-terraform@v4
 
-      - name: Terraform apply all modules
+      - name: Download plan artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: tfplans
+          path: /tmp/tfplans
+
+      - name: Terraform apply changed modules
         run: |
           set -euo pipefail
-          for dir in terraform/*/; do
-            [ -d "$dir" ] || continue
+
+          while IFS= read -r module; do
+            [ -n "$module" ] || continue
+            dir="terraform/$module"
             echo "==> $dir"
+
             terraform -chdir="$dir" init -input=false
-            terraform -chdir="$dir" apply -input=false -auto-approve
-          done
+            terraform -chdir="$dir" validate
+            terraform -chdir="$dir" apply -input=false -auto-approve "/tmp/tfplans/${module}.tfplan"
+          done < /tmp/tfplans/changed_modules.txt
