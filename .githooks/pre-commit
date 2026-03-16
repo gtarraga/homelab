@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+staged_files() { git diff --cached --name-only --diff-filter=ACM -- "$@"; }
+
+# ---------- Terraform ----------
+tf_files=$(staged_files '*.tf') || true
+if [[ -n "$tf_files" ]]; then
+  if ! command -v terraform &>/dev/null; then
+    echo "pre-commit: terraform not found, skipping fmt" >&2
+  else
+    echo "pre-commit: terraform fmt"
+    terraform fmt -recursive terraform
+    echo "$tf_files" | xargs git add
+  fi
+fi
