@@ -39,6 +39,7 @@ resource "aws_iam_role" "github_terraform" {
 
 data "aws_iam_policy_document" "github_terraform_permissions" {
   statement {
+    sid    = "SSMParameterAccess"
     effect = "Allow"
     actions = [
       "ssm:GetParameter",
@@ -46,16 +47,40 @@ data "aws_iam_policy_document" "github_terraform_permissions" {
       "ssm:GetParametersByPath",
       "ssm:PutParameter",
       "ssm:DeleteParameter",
-      "ssm:DescribeParameters"
     ]
     resources = ["arn:aws:ssm:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:parameter${var.ssm_path_prefix}*"]
   }
   statement {
+    sid       = "SSMDescribeParameters"
+    effect    = "Allow"
+    actions   = ["ssm:DescribeParameters"]
+    resources = ["*"]
+  }
+  statement {
+    sid    = "IAMSelfManage"
+    effect = "Allow"
+    actions = [
+      "iam:GetOpenIDConnectProvider",
+      "iam:GetPolicy",
+      "iam:GetPolicyVersion",
+      "iam:GetRole",
+      "iam:ListAttachedRolePolicies",
+      "iam:ListRolePolicies",
+    ]
+    resources = [
+      aws_iam_openid_connect_provider.github.arn,
+      "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/${var.role_name}",
+      "arn:aws:iam::${data.aws_caller_identity.current.account_id}:policy/${var.role_name}-policy",
+    ]
+  }
+  statement {
+    sid       = "KMSDecrypt"
     effect    = "Allow"
     actions   = ["kms:Decrypt"]
     resources = ["*"]
   }
   statement {
+    sid    = "S3TFStateAccess"
     effect = "Allow"
     actions = [
       "s3:GetObject",
