@@ -23,10 +23,8 @@ env:
   TF_IN_AUTOMATION: "true"
 
 jobs:
-  plan:
+  terraform:
     runs-on: ubuntu-latest
-    outputs:
-      has_changes: ${{ steps.plan.outputs.has_changes }}
     steps:
       - uses: actions/checkout@v5
 
@@ -51,52 +49,13 @@ jobs:
       - name: Plan
         id: plan
         run: |
-          set -euo pipefail
           set +e
           terraform -chdir=terraform plan -input=false -no-color -detailed-exitcode -out=tfplan
           code=$?
           set -e
-
-          if [ "$code" -eq 1 ]; then
-            echo "Plan failed"
-            exit 1
-          fi
-
-          has_changes="false"
-          if [ "$code" -eq 2 ]; then
-            has_changes="true"
-          fi
-          echo "has_changes=$has_changes" >> "$GITHUB_OUTPUT"
-
-      - name: Upload plan artifact
-        if: steps.plan.outputs.has_changes == 'true'
-        uses: actions/upload-artifact@v4
-        with:
-          name: tfplan
-          path: terraform/tfplan
-
-  apply:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.plan.outputs.has_changes == 'true'
-    needs: plan
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v5
-
-      - uses: aws-actions/configure-aws-credentials@v6
-        with:
-          role-to-assume: ${{ vars.AWS_ROLE_ARN }}
-          aws-region: ${{ vars.AWS_REGION }}
-
-      - uses: hashicorp/setup-terraform@v4
-
-      - name: Download plan artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: tfplan
-          path: terraform
-
-      - name: Init
-        run: terraform -chdir=terraform init -input=false -backend-config=backend.tfvars
+          if [ "$code" -eq 1 ]; then exit 1; fi
+          echo "has_changes=$([ "$code" -eq 2 ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
 
       - name: Apply
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && steps.plan.outputs.has_changes == 'true'
         run: terraform -chdir=terraform apply -input=false -auto-approve tfplan
