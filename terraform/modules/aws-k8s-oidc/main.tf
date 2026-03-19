@@ -3,7 +3,12 @@ data "aws_region" "current" {}
 
 locals {
   bucket_name = "homelab-k8s-oidc-${data.aws_caller_identity.current.account_id}"
-  issuer_url = "https://${local.bucket_name}.s3.${data.aws_region.current.name}.amazonaws.com"
+  issuer_url  = "https://${local.bucket_name}.s3.${data.aws_region.current.name}.amazonaws.com"
+}
+
+data "tls_certificate" "s3" {
+  url        = local.issuer_url
+  depends_on = [aws_s3_bucket.oidc]
 }
 
 resource "aws_s3_bucket" "oidc" {
@@ -37,9 +42,9 @@ resource "aws_s3_bucket_policy" "oidc" {
 }
 
 resource "aws_iam_openid_connect_provider" "k8s" {
-  url = local.issuer_url
-  client_id_list = ["sts.amazonaws.com"]
-  thumbprint_list = ["a031c46782e6e6c662c2c87c76da9aa62ccabd8e"] # WTF IS THIS?
+  url             = local.issuer_url
+  client_id_list  = ["sts.amazonaws.com"]
+  thumbprint_list = [data.tls_certificate.s3.certificates[0].sha1_fingerprint]
 }
 
 data "aws_iam_policy_document" "eso_assume_role" {
