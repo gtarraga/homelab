@@ -18,9 +18,9 @@ resource "aws_s3_bucket" "oidc" {
 resource "aws_s3_bucket_public_access_block" "oidc" {
   bucket = aws_s3_bucket.oidc.id
 
-  block_public_acls = false
-  block_public_policy = false
-  ignore_public_acls = false
+  block_public_acls       = false
+  block_public_policy     = false
+  ignore_public_acls      = false
   restrict_public_buckets = false
 }
 
@@ -31,11 +31,11 @@ resource "aws_s3_bucket_policy" "oidc" {
     Version = "2012-10-17"
     Statement = [
       {
-        Sid = "PublicReadGetObject"
-        Effect = "Allow"
+        Sid       = "PublicReadGetObject"
+        Effect    = "Allow"
         Principal = "*"
-        Action = "s3:GetObject"
-        Resource = "${aws_s3_bucket.oidc.arn}/*"
+        Action    = "s3:GetObject"
+        Resource  = "${aws_s3_bucket.oidc.arn}/*"
       }
     ]
   })
@@ -49,33 +49,33 @@ resource "aws_iam_openid_connect_provider" "k8s" {
 
 data "aws_iam_policy_document" "eso_assume_role" {
   statement {
-    effect = "Allow"
+    effect  = "Allow"
     actions = ["sts:AssumeRoleWithWebIdentity"]
     principals {
-      type = "Federated"
+      type        = "Federated"
       identifiers = [aws_iam_openid_connect_provider.k8s.arn]
     }
     condition {
-      test = "StringEquals"
+      test     = "StringEquals"
       variable = "${local.issuer_url}:aud"
-      values = ["sts.amazonaws.com"]
+      values   = ["sts.amazonaws.com"]
     }
     condition {
-      test = "StringEquals"
+      test     = "StringEquals"
       variable = "${local.issuer_url}:sub"
-      values = ["system:serviceaccount:infra:external-secrets"]
+      values   = ["system:serviceaccount:infra:external-secrets"]
     }
   }
 }
 
 resource "aws_iam_role" "eso" {
-  name = "eso-parameter-store-reader"
+  name               = "eso-parameter-store-reader"
   assume_role_policy = data.aws_iam_policy_document.eso_assume_role.json
 }
 
 data "aws_iam_policy_document" "eso_permissions" {
   statement {
-    sid = "SSMParameterRead"
+    sid    = "SSMParameterRead"
     effect = "Allow"
     actions = [
       "ssm:GetParameter",
@@ -87,7 +87,7 @@ data "aws_iam_policy_document" "eso_permissions" {
     ]
   }
   statement {
-    sid = "KMSDecrypt"
+    sid    = "KMSDecrypt"
     effect = "Allow"
     actions = [
       "kms:Decrypt",
@@ -97,11 +97,11 @@ data "aws_iam_policy_document" "eso_permissions" {
 }
 
 resource "aws_iam_policy" "eso" {
-  name = "eso-parameter-store-reader-policy"
+  name   = "eso-parameter-store-reader-policy"
   policy = data.aws_iam_policy_document.eso_permissions.json
 }
 
 resource "aws_iam_role_policy_attachment" "eso" {
-  role = aws_iam_role.eso.name
+  role       = aws_iam_role.eso.name
   policy_arn = aws_iam_policy.eso.arn
 }
