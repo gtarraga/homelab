@@ -36,6 +36,8 @@ jobs:
           aws-region: ${{ vars.AWS_REGION }}
 
       - uses: hashicorp/setup-terraform@v4
+        with:
+          terraform_wrapper: false
 
       - name: Format check
         run: terraform fmt -check -recursive terraform
