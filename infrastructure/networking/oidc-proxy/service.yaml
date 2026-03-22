@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: oidc-proxy
+  namespace: infra
+spec:
+  selector:
+    app: oidc-proxy
+  ports:
+    - name: http
+      port: 80
+      targetPort: 8080
+      protocol: TCP
