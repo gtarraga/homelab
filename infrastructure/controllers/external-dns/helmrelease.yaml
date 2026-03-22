@@ -1,0 +1,38 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: external-dns
+  namespace: infra
+spec:
+  interval: 10m
+  targetNamespace: infra
+  chart:
+    spec:
+      chart: external-dns
+      version: "1.20.0"
+      sourceRef:
+        kind: HelmRepository
+        name: external-dns
+        namespace: flux-system
+  values:
+    provider:
+      name: cloudflare
+    serviceAccount:
+      create: true
+      name: external-dns
+    sources:
+      - ingress
+    domainFilters:
+      - stoneforge.dev
+    policy: upsert-only
+    registry: txt
+    txtOwnerId: homelab
+    txtPrefix: extdns-
+    env:
+      - name: CF_API_TOKEN
+        valueFrom:
+          secretKeyRef:
+            name: external-dns-cloudflare
+            key: CF_API_TOKEN
+    extraArgs:
+      - --cloudflare-proxied

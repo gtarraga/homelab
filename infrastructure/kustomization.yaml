@@ -3,5 +3,6 @@ kind: Kustomization
 resources:
   - namespace.yaml
   - controllers/external-secrets
+  - controllers/external-dns
   - networking/oidc-proxy
   - networking/cloudflared
