@@ -15,7 +15,33 @@ spec:
         name: cloudflare
         namespace: flux-system
   values:
-    replicaCount: 2
+    replicaCount: 1
+  # Force http2; QUIC handshakes time out on this network path.
+  postRenderers:
+    - kustomize:
+        patches:
+          - patch: |
+              apiVersion: apps/v1
+              kind: Deployment
+              metadata:
+                name: infra-cloudflared-cloudflare-tunnel-remote
+              spec:
+                template:
+                  spec:
+                    containers:
+                      - name: cloudflared
+                        command:
+                          - cloudflared
+                          - tunnel
+                          - --no-autoupdate
+                          - --metrics
+                          - 0.0.0.0:2000
+                          - --protocol
+                          - http2
+                          - run
+            target:
+              kind: Deployment
+              name: infra-cloudflared-cloudflare-tunnel-remote
   valuesFrom:
     - kind: Secret
       name: cloudflared-tunnel-token
