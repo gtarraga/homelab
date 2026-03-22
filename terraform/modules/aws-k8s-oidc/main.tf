@@ -2,9 +2,10 @@ data "aws_caller_identity" "current" {}
 data "aws_region" "current" {}
 
 locals {
-  bucket_name       = "homelab-k8s-oidc-${data.aws_caller_identity.current.account_id}"
-  issuer_url        = "https://${local.bucket_name}.s3.${data.aws_region.current.name}.amazonaws.com"
-  public_issuer_url = "https://oidc.${var.root_domain}"
+  bucket_name        = "homelab-k8s-oidc-${data.aws_caller_identity.current.account_id}"
+  issuer_url         = "https://${local.bucket_name}.s3.${data.aws_region.current.name}.amazonaws.com"
+  public_issuer_url  = "https://oidc.${var.root_domain}"
+  public_issuer_host = "oidc.${var.root_domain}"
 }
 
 data "tls_certificate" "s3" {
@@ -88,12 +89,12 @@ data "aws_iam_policy_document" "eso_assume_role" {
     }
     condition {
       test     = "StringEquals"
-      variable = "${local.public_issuer_url}:aud"
+      variable = "${local.public_issuer_host}:aud"
       values   = ["sts.amazonaws.com"]
     }
     condition {
       test     = "StringEquals"
-      variable = "${local.public_issuer_url}:sub"
+      variable = "${local.public_issuer_host}:sub"
       values   = ["system:serviceaccount:infra:external-secrets"]
     }
   }
