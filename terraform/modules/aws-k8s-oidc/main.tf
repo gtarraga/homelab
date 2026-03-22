@@ -27,6 +27,8 @@ resource "aws_s3_bucket_public_access_block" "oidc" {
 resource "aws_s3_bucket_policy" "oidc" {
   bucket = aws_s3_bucket.oidc.id
 
+  depends_on = [aws_s3_bucket_public_access_block.oidc]
+
   policy = jsonencode({
     Version = "2012-10-17"
     Statement = [

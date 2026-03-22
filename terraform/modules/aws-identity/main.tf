@@ -63,12 +63,14 @@ data "aws_iam_policy_document" "github_terraform_permissions" {
     sid    = "IAMSelfManage"
     effect = "Allow"
     actions = [
+      "iam:CreatePolicyVersion",
       "iam:GetOpenIDConnectProvider",
       "iam:GetPolicy",
       "iam:GetPolicyVersion",
       "iam:GetRole",
       "iam:ListAttachedRolePolicies",
       "iam:ListRolePolicies",
+      "iam:ListPolicyVersions",
     ]
     resources = [
       aws_iam_openid_connect_provider.github.arn,
@@ -101,16 +103,60 @@ data "aws_iam_policy_document" "github_terraform_permissions" {
     effect = "Allow"
     actions = [
       "s3:CreateBucket",
+      "s3:DeleteBucket",
+      "s3:DeleteBucketPolicy",
+      "s3:GetAccelerateConfiguration",
+      "s3:GetBucketAcl",
+      "s3:GetBucketCORS",
+      "s3:GetBucketLogging",
+      "s3:GetBucketObjectLockConfiguration",
+      "s3:GetBucketPolicy",
+      "s3:GetBucketPublicAccessBlock",
+      "s3:GetBucketRequestPayment",
+      "s3:GetBucketTagging",
+      "s3:GetBucketVersioning",
+      "s3:GetBucketWebsite",
+      "s3:GetEncryptionConfiguration",
+      "s3:GetLifecycleConfiguration",
+      "s3:GetObject",
+      "s3:GetObjectAcl",
+      "s3:GetReplicationConfiguration",
+      "s3:ListBucket",
+      "s3:PutBucketPolicy",
+      "s3:PutBucketPublicAccessBlock"
     ]
     resources = [
       "arn:aws:s3:::homelab-k8s-oidc-${data.aws_caller_identity.current.account_id}",
+      "arn:aws:s3:::homelab-k8s-oidc-${data.aws_caller_identity.current.account_id}/*",
     ]
   }
   statement {
     sid    = "K8sOIDCIAMAccess"
     effect = "Allow"
     actions = [
+      "iam:AttachRolePolicy",
+      "iam:CreateOpenIDConnectProvider",
       "iam:CreatePolicy",
+      "iam:CreatePolicyVersion",
+      "iam:CreateRole",
+      "iam:DeleteOpenIDConnectProvider",
+      "iam:DeletePolicy",
+      "iam:DeleteRole",
+      "iam:DetachRolePolicy",
+      "iam:GetOpenIDConnectProvider",
+      "iam:GetPolicy",
+      "iam:GetPolicyVersion",
+      "iam:GetRole",
+      "iam:ListAttachedRolePolicies",
+      "iam:ListPolicyVersions",
+      "iam:ListRolePolicies",
+      "iam:TagOpenIDConnectProvider",
+      "iam:TagPolicy",
+      "iam:TagRole",
+      "iam:UntagOpenIDConnectProvider",
+      "iam:UntagPolicy",
+      "iam:UntagRole",
+      "iam:UpdateAssumeRolePolicy",
     ]
     resources = [
       "arn:aws:iam::${data.aws_caller_identity.current.account_id}:oidc-provider/*",
