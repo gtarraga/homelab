@@ -1,20 +1,18 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: podinfo
+  name: podinfo-private
   namespace: projects
-  annotations:
-    external-dns.alpha.kubernetes.io/hostname: public.stoneforge.dev
 spec:
   ingressClassName: traefik
   rules:
-    - host: public.stoneforge.dev
+    - host: private.stoneforge.dev
       http:
         paths:
           - path: /
             pathType: Prefix
             backend:
               service:
-                name: podinfo
+                name: podinfo-private
                 port:
                   number: 9898

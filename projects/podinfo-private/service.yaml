@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: podinfo-private
+  namespace: projects
+spec:
+  selector:
+    app: podinfo-private
+  ports:
+    - name: http
+      port: 9898
+      targetPort: 9898
+      protocol: TCP
