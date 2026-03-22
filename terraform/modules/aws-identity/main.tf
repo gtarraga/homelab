@@ -150,6 +150,7 @@ data "aws_iam_policy_document" "github_terraform_permissions" {
       "iam:ListAttachedRolePolicies",
       "iam:ListPolicyVersions",
       "iam:ListRolePolicies",
+      "iam:ListInstanceProfilesForRole",
       "iam:TagOpenIDConnectProvider",
       "iam:TagPolicy",
       "iam:TagRole",
