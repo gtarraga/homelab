@@ -12,3 +12,8 @@ variable "github_repo" {
   type    = string
   default = "homelab"
 }
+
+variable "root_domain" {
+  type    = string
+  default = "stoneforge.dev"
+}

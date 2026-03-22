@@ -18,6 +18,9 @@ spec:
         - name: oidc-proxy
           image: ghcr.io/gtarraga/oidc-proxy:latest
           imagePullPolicy: Always
+          env:
+            - name: PUBLIC_ISSUER_URL
+              value: https://oidc.stoneforge.dev
           ports:
             - containerPort: 8080
           resources:

@@ -13,5 +13,6 @@ module "cloudflare" {
 }
 
 module "aws_k8s_oidc" {
-  source = "./modules/aws-k8s-oidc"
+  source      = "./modules/aws-k8s-oidc"
+  root_domain = var.root_domain
 }

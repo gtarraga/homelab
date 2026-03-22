@@ -2,13 +2,18 @@ data "aws_caller_identity" "current" {}
 data "aws_region" "current" {}
 
 locals {
-  bucket_name = "homelab-k8s-oidc-${data.aws_caller_identity.current.account_id}"
-  issuer_url  = "https://${local.bucket_name}.s3.${data.aws_region.current.name}.amazonaws.com"
+  bucket_name       = "homelab-k8s-oidc-${data.aws_caller_identity.current.account_id}"
+  issuer_url        = "https://${local.bucket_name}.s3.${data.aws_region.current.name}.amazonaws.com"
+  public_issuer_url = "https://oidc.${var.root_domain}"
 }
 
 data "tls_certificate" "s3" {
   url        = local.issuer_url
   depends_on = [aws_s3_bucket.oidc]
+}
+
+data "tls_certificate" "public" {
+  url = local.public_issuer_url
 }
 
 resource "aws_s3_bucket" "oidc" {
@@ -49,6 +54,12 @@ resource "aws_iam_openid_connect_provider" "k8s" {
   thumbprint_list = [data.tls_certificate.s3.certificates[0].sha1_fingerprint]
 }
 
+resource "aws_iam_openid_connect_provider" "k8s_public" {
+  url             = local.public_issuer_url
+  client_id_list  = ["sts.amazonaws.com"]
+  thumbprint_list = [data.tls_certificate.public.certificates[0].sha1_fingerprint]
+}
+
 data "aws_iam_policy_document" "eso_assume_role" {
   statement {
     effect  = "Allow"
@@ -65,6 +76,24 @@ data "aws_iam_policy_document" "eso_assume_role" {
     condition {
       test     = "StringEquals"
       variable = "${local.issuer_url}:sub"
+      values   = ["system:serviceaccount:infra:external-secrets"]
+    }
+  }
+  statement {
+    effect  = "Allow"
+    actions = ["sts:AssumeRoleWithWebIdentity"]
+    principals {
+      type        = "Federated"
+      identifiers = [aws_iam_openid_connect_provider.k8s_public.arn]
+    }
+    condition {
+      test     = "StringEquals"
+      variable = "${local.public_issuer_url}:aud"
+      values   = ["sts.amazonaws.com"]
+    }
+    condition {
+      test     = "StringEquals"
+      variable = "${local.public_issuer_url}:sub"
       values   = ["system:serviceaccount:infra:external-secrets"]
     }
   }

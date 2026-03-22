@@ -4,10 +4,12 @@ import (
 	"context"
 	"crypto/tls"
 	"crypto/x509"
+	"encoding/json"
 	"fmt"
 	"io"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 	"strings"
 	"time"
@@ -24,6 +26,7 @@ const (
 	readHeaderTimeout    = 5 * time.Second
 	upstreamTimeout      = 10 * time.Second
 	transportIdleTimeout = 90 * time.Second
+	publicIssuerEnv      = "PUBLIC_ISSUER_URL"
 )
 
 func main() {
@@ -32,9 +35,14 @@ func main() {
 		log.Fatalf("create kube client: %v", err)
 	}
 
+	publicIssuerURL, err := loadPublicIssuerURL()
+	if err != nil {
+		log.Fatalf("load public issuer URL: %v", err)
+	}
+
 	mux := http.NewServeMux()
-	mux.HandleFunc(pathOpenIDConfig, proxyHandler(client, pathOpenIDConfig))
-	mux.HandleFunc(pathJWKS, proxyHandler(client, pathJWKS))
+	mux.HandleFunc(pathOpenIDConfig, proxyHandler(client, pathOpenIDConfig, publicIssuerURL))
+	mux.HandleFunc(pathJWKS, proxyHandler(client, pathJWKS, ""))
 	mux.HandleFunc("/healthz", healthHandler)
 
 	server := &http.Server{
@@ -54,7 +62,7 @@ func healthHandler(w http.ResponseWriter, _ *http.Request) {
 	_, _ = w.Write([]byte("ok"))
 }
 
-func proxyHandler(client *http.Client, path string) http.HandlerFunc {
+func proxyHandler(client *http.Client, path string, publicIssuerURL string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			w.WriteHeader(http.StatusMethodNotAllowed)
@@ -67,12 +75,69 @@ func proxyHandler(client *http.Client, path string) http.HandlerFunc {
 			return
 		}
 
+		if path == pathOpenIDConfig && publicIssuerURL != "" && statusCode == http.StatusOK {
+			body, err = rewriteOpenIDConfig(body, publicIssuerURL)
+			if err != nil {
+				http.Error(w, fmt.Sprintf("rewrite openid config: %v", err), http.StatusBadGateway)
+				return
+			}
+		}
+
 		if contentType != "" {
 			w.Header().Set("Content-Type", contentType)
 		}
 		w.WriteHeader(statusCode)
 		_, _ = w.Write(body)
 	}
+}
+
+func loadPublicIssuerURL() (string, error) {
+	issuerURL := strings.TrimSpace(os.Getenv(publicIssuerEnv))
+	if issuerURL == "" {
+		return "", nil
+	}
+
+	parsedURL, err := url.Parse(issuerURL)
+	if err != nil {
+		return "", fmt.Errorf("parse %s: %w", publicIssuerEnv, err)
+	}
+	if parsedURL.Scheme != "https" {
+		return "", fmt.Errorf("%s must use https", publicIssuerEnv)
+	}
+	if parsedURL.Host == "" {
+		return "", fmt.Errorf("%s must include host", publicIssuerEnv)
+	}
+	if parsedURL.Path != "" && parsedURL.Path != "/" {
+		return "", fmt.Errorf("%s must not include path", publicIssuerEnv)
+	}
+
+	return strings.TrimRight(issuerURL, "/"), nil
+}
+
+func rewriteOpenIDConfig(body []byte, issuerURL string) ([]byte, error) {
+	var config map[string]json.RawMessage
+	if err := json.Unmarshal(body, &config); err != nil {
+		return nil, fmt.Errorf("decode response: %w", err)
+	}
+
+	issuerValue, err := json.Marshal(issuerURL)
+	if err != nil {
+		return nil, fmt.Errorf("marshal issuer: %w", err)
+	}
+	jwksValue, err := json.Marshal(issuerURL + pathJWKS)
+	if err != nil {
+		return nil, fmt.Errorf("marshal jwks uri: %w", err)
+	}
+
+	config["issuer"] = issuerValue
+	config["jwks_uri"] = jwksValue
+
+	rewrittenBody, err := json.Marshal(config)
+	if err != nil {
+		return nil, fmt.Errorf("encode response: %w", err)
+	}
+
+	return rewrittenBody, nil
 }
 
 func fetchFromKube(ctx context.Context, client *http.Client, path string) ([]byte, int, string, error) {
@@ -117,10 +182,10 @@ func newKubeClient() (*http.Client, error) {
 			MinVersion: tls.VersionTLS12,
 			RootCAs:    pool,
 		},
-		MaxIdleConns:        4,
-		IdleConnTimeout:     transportIdleTimeout,
-		DisableCompression:  true,
-		ForceAttemptHTTP2:   true,
+		MaxIdleConns:       4,
+		IdleConnTimeout:    transportIdleTimeout,
+		DisableCompression: true,
+		ForceAttemptHTTP2:  true,
 	}
 
 	return &http.Client{
