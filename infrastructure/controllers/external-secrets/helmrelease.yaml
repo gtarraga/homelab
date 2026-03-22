@@ -1,0 +1,42 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: external-secrets
+  namespace: infra
+spec:
+  interval: 10m
+  targetNamespace: infra
+  chart:
+    spec:
+      chart: external-secrets
+      version: "2.2.0"
+      sourceRef:
+        kind: HelmRepository
+        name: external-secrets
+        namespace: flux-system
+  values:
+    installCRDs: true
+    serviceAccount:
+      create: true
+      name: external-secrets
+    extraEnv:
+      - name: AWS_ROLE_ARN
+        value: arn:aws:iam::849279003196:role/eso-parameter-store-reader
+      - name: AWS_WEB_IDENTITY_TOKEN_FILE
+        value: /var/run/secrets/aws/token
+      - name: AWS_REGION
+        value: eu-west-1
+      - name: AWS_DEFAULT_REGION
+        value: eu-west-1
+    extraVolumes:
+      - name: aws-web-identity-token
+        projected:
+          sources:
+            - serviceAccountToken:
+                path: token
+                audience: sts.amazonaws.com
+                expirationSeconds: 3600
+    extraVolumeMounts:
+      - name: aws-web-identity-token
+        mountPath: /var/run/secrets/aws
+        readOnly: true
