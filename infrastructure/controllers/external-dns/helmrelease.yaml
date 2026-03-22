@@ -20,6 +20,7 @@ spec:
     serviceAccount:
       create: true
       name: external-dns
+    annotationFilter: external-dns.public/enabled in (true)
     sources:
       - ingress
     domainFilters:
@@ -43,5 +44,3 @@ spec:
       - --cloudflare-proxied
     defaultTargets:
       - ${CF_TUNNEL_ID}.cfargotunnel.com
-    sources:
-      - ingress

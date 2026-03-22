@@ -5,6 +5,7 @@ metadata:
   namespace: projects
   annotations:
     external-dns.alpha.kubernetes.io/hostname: public.stoneforge.dev
+    external-dns.public/enabled: "true"
 spec:
   ingressClassName: traefik
   rules:
