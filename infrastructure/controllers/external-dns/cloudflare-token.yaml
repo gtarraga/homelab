@@ -15,3 +15,6 @@ spec:
     - secretKey: CF_API_TOKEN
       remoteRef:
         key: /homelab/cloudflare/externaldns/token
+    - secretKey: CF_TUNNEL_ID
+      remoteRef:
+        key: /homelab/cloudflare/tunnel/homelab/id

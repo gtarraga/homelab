@@ -34,5 +34,14 @@ spec:
           secretKeyRef:
             name: external-dns-cloudflare
             key: CF_API_TOKEN
+      - name: CF_TUNNEL_ID
+        valueFrom:
+          secretKeyRef:
+            name: external-dns-cloudflare
+            key: CF_TUNNEL_ID
     extraArgs:
       - --cloudflare-proxied
+    defaultTargets:
+      - ${CF_TUNNEL_ID}.cfargotunnel.com
+    sources:
+      - ingress

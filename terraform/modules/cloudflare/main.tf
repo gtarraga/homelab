@@ -9,14 +9,6 @@ locals {
   zone_id    = data.cloudflare_zone.stoneforge.id
 }
 
-resource "cloudflare_dns_record" "tf_probe" {
-  zone_id = local.zone_id
-  name    = "tf-probe"
-  type    = "TXT"
-  content = "terraform-provisioned"
-  ttl     = 300
-  proxied = false
-}
 resource "cloudflare_dns_record" "oidc_tunnel" {
   zone_id = local.zone_id
   name    = "oidc"
@@ -57,4 +49,10 @@ resource "aws_ssm_parameter" "cloudflare_homelab_tunnel_token" {
   name  = "/homelab/cloudflare/tunnel/homelab/token"
   type  = "SecureString"
   value = data.cloudflare_zero_trust_tunnel_cloudflared_token.homelab.token
+}
+
+resource "aws_ssm_parameter" "cloudflare_homelab_tunnel_id" {
+  name  = "/homelab/cloudflare/tunnel/homelab/id"
+  type  = "SecureString"
+  value = cloudflare_zero_trust_tunnel_cloudflared.homelab.id
 }
