@@ -96,6 +96,28 @@ data "aws_iam_policy_document" "github_terraform_permissions" {
       "${local.tfstate_bucket_arn}/*",
     ]
   }
+  statement {
+    sid    = "S3K8sOIDCBucketAccess"
+    effect = "Allow"
+    actions = [
+      "s3:CreateBucket",
+    ]
+    resources = [
+      "arn:aws:s3:::homelab-k8s-oidc-${data.aws_caller_identity.current.account_id}",
+    ]
+  }
+  statement {
+    sid    = "K8sOIDCIAMAccess"
+    effect = "Allow"
+    actions = [
+      "iam:CreatePolicy",
+    ]
+    resources = [
+      "arn:aws:iam::${data.aws_caller_identity.current.account_id}:oidc-provider/*",
+      "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/eso-parameter-store-reader",
+      "arn:aws:iam::${data.aws_caller_identity.current.account_id}:policy/eso-parameter-store-reader-policy",
+    ]
+  }
 }
 
 resource "aws_iam_policy" "github_terraform_policy" {
