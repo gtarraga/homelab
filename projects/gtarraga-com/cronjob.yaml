@@ -1,0 +1,26 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: gtarraga-com-rollout
+  namespace: projects
+spec:
+  schedule: "0 0 * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          serviceAccountName: gtarraga-com-rollout
+          restartPolicy: OnFailure
+          containers:
+            - name: rollout
+              image: bitnami/kubectl:latest
+              command:
+                - kubectl
+                - -n
+                - projects
+                - rollout
+                - restart
+                - deployment/gtarraga-com

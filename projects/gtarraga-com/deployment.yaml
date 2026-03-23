@@ -1,0 +1,35 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gtarraga-com
+  namespace: projects
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: gtarraga-com
+  template:
+    metadata:
+      labels:
+        app: gtarraga-com
+    spec:
+      nodeSelector:
+        location: edge
+      tolerations:
+        - key: location
+          operator: Equal
+          value: edge
+          effect: NoSchedule
+      containers:
+        - name: gtarraga-com
+          image: ghcr.io/gtarraga/personal-site:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 80
+          resources:
+            requests:
+              cpu: "10m"
+              memory: "32Mi"
+            limits:
+              cpu: "100m"
+              memory: "64Mi"

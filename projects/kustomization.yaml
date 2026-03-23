@@ -4,3 +4,4 @@ resources:
   - namespace.yaml
   - podinfo
   - podinfo-private
+  - gtarraga-com
