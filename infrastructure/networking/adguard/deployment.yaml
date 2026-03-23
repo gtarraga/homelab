@@ -5,6 +5,8 @@ metadata:
   namespace: infra
 spec:
   replicas: 1
+  strategy:
+    type: Recreate
   selector:
     matchLabels:
       app: adguard
@@ -24,9 +26,7 @@ spec:
             - sh
             - -c
             - |
-              if [ ! -s /conf/AdGuardHome.yaml ]; then
-                cp /config/AdGuardHome.yaml /conf/AdGuardHome.yaml
-              fi
+              cp /config/AdGuardHome.yaml /conf/AdGuardHome.yaml
           volumeMounts:
             - name: conf
               mountPath: /conf

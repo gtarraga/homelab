@@ -1,5 +1,6 @@
 http:
   address: 0.0.0.0:5501
+schema_version: 33
 dns:
   bind_hosts:
     - 0.0.0.0
