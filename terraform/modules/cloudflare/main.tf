@@ -4,9 +4,27 @@ data "cloudflare_zone" "stoneforge" {
   }
 }
 
+data "cloudflare_zone" "gtarraga_com" {
+  filter = {
+    name = var.gtarraga_com_domain
+  }
+}
+
 locals {
   account_id = data.cloudflare_zone.stoneforge.account.id
   zone_id    = data.cloudflare_zone.stoneforge.id
+  zone_ids = {
+    (var.zone_name)           = data.cloudflare_zone.stoneforge.id
+    (var.gtarraga_com_domain) = data.cloudflare_zone.gtarraga_com.id
+  }
+}
+
+resource "cloudflare_zone_setting" "always_use_https" {
+  for_each = local.zone_ids
+
+  zone_id    = each.value
+  setting_id = "always_use_https"
+  value      = "on"
 }
 
 resource "cloudflare_dns_record" "oidc_tunnel" {
