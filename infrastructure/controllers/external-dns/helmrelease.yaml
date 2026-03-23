@@ -25,6 +25,7 @@ spec:
       - ingress
     domainFilters:
       - stoneforge.dev
+      - gtarraga.com
     policy: sync
     registry: txt
     txtOwnerId: homelab

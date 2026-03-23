@@ -32,6 +32,14 @@ resource "cloudflare_zero_trust_tunnel_cloudflared_config" "homelab" {
         service  = "http://traefik.kube-system.svc.cluster.local:80"
       },
       {
+        hostname = "${var.gtarraga_com_domain}"
+        service  = "http://traefik.kube-system.svc.cluster.local:80"
+      },
+      {
+        hostname = "*.${var.gtarraga_com_domain}"
+        service  = "http://traefik.kube-system.svc.cluster.local:80"
+      },
+      {
         service = "http_status:404"
       }
     ]
