@@ -4,5 +4,6 @@ resources:
   - namespace.yaml
   - controllers/external-secrets
   - controllers/external-dns
+  - networking/adguard
   - networking/oidc-proxy
   - networking/cloudflared
