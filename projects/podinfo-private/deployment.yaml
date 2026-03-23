@@ -1,17 +1,17 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: podinfo
+  name: podinfo-private
   namespace: projects
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: podinfo
+      app: podinfo-private
   template:
     metadata:
       labels:
-        app: podinfo
+        app: podinfo-private
     spec:
       nodeSelector:
         location: edge
