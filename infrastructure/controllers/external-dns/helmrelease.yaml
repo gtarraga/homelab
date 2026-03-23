@@ -43,4 +43,4 @@ spec:
     extraArgs:
       - --cloudflare-proxied
     defaultTargets:
-      - ${CF_TUNNEL_ID}.cfargotunnel.com
+      - $(CF_TUNNEL_ID).cfargotunnel.com
