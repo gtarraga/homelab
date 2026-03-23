@@ -17,6 +17,22 @@ spec:
         kubernetes.io/hostname: jitte
       hostNetwork: true
       dnsPolicy: ClusterFirstWithHostNet
+      initContainers:
+        - name: seed-config
+          image: busybox:1.36
+          command:
+            - sh
+            - -c
+            - |
+              if [ ! -s /conf/AdGuardHome.yaml ]; then
+                cp /config/AdGuardHome.yaml /conf/AdGuardHome.yaml
+              fi
+          volumeMounts:
+            - name: conf
+              mountPath: /conf
+            - name: config
+              mountPath: /config
+              readOnly: true
       containers:
         - name: adguard
           image: adguard/adguardhome:latest
@@ -46,3 +62,9 @@ spec:
         - name: work
           persistentVolumeClaim:
             claimName: adguard-work
+        - name: config
+          configMap:
+            name: adguard-config
+            items:
+              - key: AdGuardHome.yaml
+                path: AdGuardHome.yaml

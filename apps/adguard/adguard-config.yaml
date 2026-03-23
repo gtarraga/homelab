@@ -1,0 +1,26 @@
+http:
+  address: 0.0.0.0:5501
+dns:
+  bind_hosts:
+    - 0.0.0.0
+  port: 53
+filters:
+  - enabled: true
+    url: https://adguardteam.github.io/HostlistsRegistry/assets/filter_1.txt
+    name: AdGuard DNS filter
+    id: 1
+  - enabled: true
+    url: https://adguardteam.github.io/HostlistsRegistry/assets/filter_2.txt
+    name: AdAway Default Blocklist
+    id: 2
+  - enabled: true
+    url: https://adguardteam.github.io/HostlistsRegistry/assets/filter_27.txt
+    name: OISD Blocklist Big
+    id: 27
+filtering:
+  filtering_enabled: true
+  rewrites_enabled: true
+  rewrites:
+    - domain: '*.stoneforge.dev'
+      answer: 100.116.188.19
+      enabled: true

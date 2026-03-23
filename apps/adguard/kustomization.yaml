@@ -3,3 +3,9 @@ kind: Kustomization
 resources:
   - pvc.yaml
   - deployment.yaml
+configMapGenerator:
+  - name: adguard-config
+    files:
+      - AdGuardHome.yaml=adguard-config.yaml # Adguard expects the config file to be named AdGuardHome.yaml
+generatorOptions:
+  disableNameSuffixHash: true
