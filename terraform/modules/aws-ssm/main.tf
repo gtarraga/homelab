@@ -17,3 +17,13 @@ resource "aws_ssm_parameter" "cf_terraform_token" {
     ignore_changes = [value]
   }
 }
+
+resource "aws_ssm_parameter" "tailscale_terraform_api_key" {
+  name  = "/homelab/tailscale/terraform/api-key"
+  type  = "SecureString"
+  value = "bootstrap-replace-me"
+
+  lifecycle {
+    ignore_changes = [value]
+  }
+}
