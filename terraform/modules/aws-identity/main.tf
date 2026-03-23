@@ -157,6 +157,7 @@ data "aws_iam_policy_document" "github_terraform_permissions" {
       "iam:UntagOpenIDConnectProvider",
       "iam:UntagPolicy",
       "iam:UntagRole",
+      "iam:UpdateOpenIDConnectProviderThumbprint",
       "iam:UpdateAssumeRolePolicy",
     ]
     resources = [
