@@ -25,7 +25,7 @@ spec:
       - ingress
     domainFilters:
       - stoneforge.dev
-    policy: upsert-only
+    policy: sync
     registry: txt
     txtOwnerId: homelab
     txtPrefix: extdns-
@@ -42,5 +42,4 @@ spec:
             key: CF_TUNNEL_ID
     extraArgs:
       - --cloudflare-proxied
-    defaultTargets:
-      - $(CF_TUNNEL_ID).cfargotunnel.com
+      - --default-targets=$(CF_TUNNEL_ID).cfargotunnel.com
