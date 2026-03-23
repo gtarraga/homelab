@@ -4,6 +4,8 @@ namespace: infra
 resources:
   - pvc.yaml
   - deployment.yaml
+  - service.yaml
+  - ingress.yaml
 configMapGenerator:
   - name: adguard-config
     files:
