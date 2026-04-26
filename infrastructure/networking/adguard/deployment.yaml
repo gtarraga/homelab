@@ -38,7 +38,7 @@ spec:
               readOnly: true
       containers:
         - name: adguard
-          image: adguard/adguardhome:latest
+          image: adguard/adguardhome:v0.107.74
           ports:
             - containerPort: 53
               protocol: UDP
