@@ -16,8 +16,15 @@ spec:
         name: bitnami
         namespace: flux-system
   values:
+    global:
+      security:
+        allowInsecureImages: true
+
     image:
-      tag: 3.3.2-debian-12-r0
+      registry: ghcr.io
+      repository: mlflow/mlflow
+      tag: v3.11.1-full
+      pullPolicy: IfNotPresent
 
     tracking:
       auth:
