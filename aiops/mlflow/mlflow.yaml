@@ -86,6 +86,9 @@ spec:
             httpGet:
               path: /
               port: http
+              httpHeaders:
+                - name: Host
+                  value: mlflow.stoneforge.dev
             initialDelaySeconds: 15
             periodSeconds: 10
             timeoutSeconds: 5
@@ -93,6 +96,9 @@ spec:
             httpGet:
               path: /
               port: http
+              httpHeaders:
+                - name: Host
+                  value: mlflow.stoneforge.dev
             initialDelaySeconds: 60
             periodSeconds: 30
             timeoutSeconds: 5
