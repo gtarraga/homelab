@@ -81,7 +81,7 @@ spec:
             - --allowed-hosts
             - mlflow.stoneforge.dev,localhost:*,127.0.0.1:*
             - --cors-allowed-origins
-            - http://mlflow.stoneforge.dev,http://localhost:5000
+            - http://mlflow.stoneforge.dev,https://mlflow.stoneforge.dev,http://localhost:5000
           readinessProbe:
             httpGet:
               path: /
