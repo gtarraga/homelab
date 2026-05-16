@@ -1,0 +1,27 @@
+apiVersion: traefik.io/v1alpha1
+kind: ServersTransport
+metadata:
+  name: unifi-insecure
+  namespace: infra
+spec:
+  # UniFi uses a self-signed certificate on its admin port.
+  insecureSkipVerify: true
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: unifi
+  namespace: infra
+spec:
+  entryPoints:
+    - web
+    - websecure
+  routes:
+    - match: Host(`unifi.stoneforge.dev`)
+      kind: Rule
+      services:
+        - name: unifi
+          port: 443
+          scheme: https
+          serversTransport: unifi-insecure
+  tls: {}

@@ -7,3 +7,4 @@ resources:
   - mongodb.yaml
   - deployment.yaml
   - service.yaml
+  - ingressroute.yaml
