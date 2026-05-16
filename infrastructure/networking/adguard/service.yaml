@@ -7,6 +7,10 @@ metadata:
     metallb.io/loadBalancerIPs: 192.168.1.52
 spec:
   type: LoadBalancer
+  externalIPs:
+    # Tailscale DNS uses jitte's tailnet IP as nameserver. Keep that stable
+    # while AdGuard itself is exposed through MetalLB on the LAN VIP.
+    - 100.116.188.19
   selector:
     app: adguard
   ports:
