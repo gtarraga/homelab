@@ -8,4 +8,4 @@ spec:
     - home-lan
   nodeSelectors:
     - matchLabels:
-        location: home
+        kubernetes.io/hostname: jitte
