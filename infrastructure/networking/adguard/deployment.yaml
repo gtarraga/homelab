@@ -18,10 +18,10 @@ spec:
       labels:
         app: adguard
     spec:
+      # Keep pinned while local-path PVCs are on jitte. DNS exposure now uses MetalLB,
+      # not hostNetwork, so this can move once storage is shared/migrated.
       nodeSelector:
         kubernetes.io/hostname: jitte
-      hostNetwork: true
-      dnsPolicy: ClusterFirstWithHostNet
       initContainers:
         - name: seed-config
           image: busybox:1.36

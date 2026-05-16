@@ -3,10 +3,21 @@ kind: Service
 metadata:
   name: adguard
   namespace: infra
+  annotations:
+    metallb.io/loadBalancerIPs: 192.168.1.52
 spec:
+  type: LoadBalancer
   selector:
     app: adguard
   ports:
+    - name: dns-tcp
+      port: 53
+      targetPort: 53
+      protocol: TCP
+    - name: dns-udp
+      port: 53
+      targetPort: 53
+      protocol: UDP
     - name: http
       port: 5501
       targetPort: 5501
