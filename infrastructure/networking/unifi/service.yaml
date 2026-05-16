@@ -7,6 +7,11 @@ metadata:
     metallb.io/loadBalancerIPs: 192.168.1.51
 spec:
   type: LoadBalancer
+  externalIPs:
+    # Migration compatibility: restored devices currently inform to old Docker host.
+    # Keep 192.168.1.147:8080 reachable until all devices are reprovisioned
+    # to unifi-inform.stoneforge.dev.
+    - 192.168.1.147
   selector:
     app: unifi
   ports:
