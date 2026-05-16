@@ -8,3 +8,4 @@ resources:
   - networking/oidc-proxy
   - networking/cloudflared
   - networking/metallb
+  - networking/unifi
