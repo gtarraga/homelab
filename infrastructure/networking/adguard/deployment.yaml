@@ -66,8 +66,8 @@ spec:
           persistentVolumeClaim:
             claimName: adguard-work
         - name: config
-          configMap:
-            name: adguard-config
+          secret:
+            secretName: adguard-config
             items:
               - key: AdGuardHome.yaml
                 path: AdGuardHome.yaml

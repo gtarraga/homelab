@@ -6,7 +6,4 @@ resources:
   - deployment.yaml
   - service.yaml
   - ingress.yaml
-configMapGenerator:
-  - name: adguard-config
-    files:
-      - AdGuardHome.yaml=adguard-config.yaml # Adguard expects the config file to be named AdGuardHome.yaml
+  - adguard-config.sops.yaml
