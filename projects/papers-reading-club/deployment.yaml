@@ -13,13 +13,6 @@ spec:
       labels:
         app: papers-reading-club
     spec:
-      nodeSelector:
-        location: edge
-      tolerations:
-        - key: location
-          operator: Equal
-          value: edge
-          effect: NoSchedule
       securityContext:
         fsGroup: 1000
         runAsUser: 1000
