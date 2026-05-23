@@ -26,6 +26,8 @@ spec:
           env:
             - name: NODE_ENV
               value: production
+            - name: CLUB_STOPPED
+              value: "true"
           envFrom:
             - secretRef:
                 name: papers-reading-club-env
