@@ -1,0 +1,56 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: papers-reading-club
+  namespace: projects
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: papers-reading-club
+  template:
+    metadata:
+      labels:
+        app: papers-reading-club
+    spec:
+      nodeSelector:
+        location: edge
+      tolerations:
+        - key: location
+          operator: Equal
+          value: edge
+          effect: NoSchedule
+      securityContext:
+        fsGroup: 1000
+        runAsUser: 1000
+        runAsGroup: 1000
+      containers:
+        - name: papers-reading-club
+          image: ghcr.io/gtarraga/papers-reading-club:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 3000
+          env:
+            - name: NODE_ENV
+              value: production
+          envFrom:
+            - secretRef:
+                name: papers-reading-club-env
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+          volumeMounts:
+            - name: data
+              mountPath: /app/data
+              subPath: data
+            - name: data
+              mountPath: /app/logs
+              subPath: logs
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: papers-reading-club-data
