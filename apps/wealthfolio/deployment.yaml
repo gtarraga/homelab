@@ -1,0 +1,69 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: wealthfolio
+  namespace: apps
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: wealthfolio
+  template:
+    metadata:
+      labels:
+        app: wealthfolio
+    spec:
+      securityContext:
+        fsGroup: 1000
+      containers:
+        - name: wealthfolio
+          image: ghcr.io/wealthfolio/wealthfolio:3.4.0
+          ports:
+            - containerPort: 8088
+          env:
+            - name: WF_LISTEN_ADDR
+              value: 0.0.0.0:8088
+            - name: WF_DB_PATH
+              value: /data/wealthfolio.db
+            - name: WF_CORS_ALLOW_ORIGINS
+              value: https://wealthfolio.stoneforge.dev
+            - name: WF_AUTH_TOKEN_TTL_MINUTES
+              value: "480"
+            - name: WF_COOKIE_SECURE
+              value: "true"
+            - name: WF_LOG_FORMAT
+              value: text
+            - name: WF_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: wealthfolio-env
+                  key: WF_SECRET_KEY
+            - name: WF_AUTH_PASSWORD_HASH
+              valueFrom:
+                secretKeyRef:
+                  name: wealthfolio-env
+                  key: WF_AUTH_PASSWORD_HASH
+          readinessProbe:
+            tcpSocket:
+              port: 8088
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            tcpSocket:
+              port: 8088
+            initialDelaySeconds: 30
+            periodSeconds: 30
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "256Mi"
+            limits:
+              cpu: "1000m"
+              memory: "1Gi"
+          volumeMounts:
+            - name: data
+              mountPath: /data
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: wealthfolio-data
