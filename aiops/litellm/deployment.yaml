@@ -1,0 +1,105 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: litellm
+  namespace: aiops
+spec:
+  replicas: 1
+  revisionHistoryLimit: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 0
+      maxUnavailable: 1
+  selector:
+    matchLabels:
+      app: litellm
+  template:
+    metadata:
+      labels:
+        app: litellm
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/path: /metrics
+        prometheus.io/port: "4000"
+    spec:
+      terminationGracePeriodSeconds: 60
+      containers:
+        - name: litellm
+          image: ghcr.io/berriai/litellm:main-stable
+          imagePullPolicy: IfNotPresent
+          command: ["sh", "-c"]
+          args:
+            - exec litellm --config /app/config.yaml --port 4000 --num_workers 1 --max_requests_before_restart 10000
+          ports:
+            - name: http
+              containerPort: 4000
+          env:
+            - name: LITELLM_MODE
+              value: PRODUCTION
+            - name: LITELLM_LOG
+              value: ERROR
+            - name: STORE_MODEL_IN_DB
+              value: "True"
+            - name: USE_PRISMA_MIGRATE
+              value: "True"
+            - name: MAX_REQUESTS_BEFORE_RESTART
+              value: "10000"
+            - name: USE_SHARED_HEALTH_CHECK
+              value: "true"
+            - name: DEFAULT_SHARED_HEALTH_CHECK_TTL
+              value: "300"
+            - name: DEFAULT_SHARED_HEALTH_CHECK_LOCK_TTL
+              value: "60"
+            - name: PROMETHEUS_MULTIPROC_DIR
+              value: /prometheus_multiproc
+            - name: PROXY_BASE_URL
+              value: https://litellm.stoneforge.dev
+            - name: HOME
+              value: /root
+            - name: NPM_CONFIG_CACHE
+              value: /root/.npm
+          envFrom:
+            - secretRef:
+                name: litellm-secret
+          resources:
+            requests:
+              cpu: 250m
+              memory: 512Mi
+            limits:
+              cpu: "2"
+              memory: 2Gi
+          volumeMounts:
+            - name: litellm-config
+              mountPath: /app/config.yaml
+              subPath: config.yaml
+              readOnly: true
+            - name: prometheus-multiproc
+              mountPath: /prometheus_multiproc
+          readinessProbe:
+            httpGet:
+              path: /health/readiness
+              port: http
+            initialDelaySeconds: 20
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 6
+          livenessProbe:
+            httpGet:
+              path: /health/liveliness
+              port: http
+            initialDelaySeconds: 180
+            periodSeconds: 20
+            timeoutSeconds: 3
+            failureThreshold: 3
+          lifecycle:
+            preStop:
+              exec:
+                command: ["sh", "-c", "sleep 10"]
+      volumes:
+        - name: litellm-config
+          configMap:
+            name: litellm-config
+        - name: prometheus-multiproc
+          emptyDir:
+            sizeLimit: 64Mi

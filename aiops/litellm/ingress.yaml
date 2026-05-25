@@ -1,0 +1,60 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: litellm
+  namespace: aiops
+spec:
+  ingressClassName: traefik
+  rules:
+    - host: litellm.stoneforge.dev
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: litellm
+                port:
+                  number: 4000
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: litellm-root-redirect
+  namespace: aiops
+  annotations:
+    traefik.ingress.kubernetes.io/router.middlewares: aiops-litellm-root-redirect@kubernetescrd
+spec:
+  ingressClassName: traefik
+  rules:
+    - host: litellm.stoneforge.dev
+      http:
+        paths:
+          - path: /
+            pathType: Exact
+            backend:
+              service:
+                name: litellm
+                port:
+                  number: 4000
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: litellm-ui-login
+  namespace: aiops
+  annotations:
+    traefik.ingress.kubernetes.io/router.middlewares: aiops-litellm-ui-login@kubernetescrd
+spec:
+  ingressClassName: traefik
+  rules:
+    - host: litellm.stoneforge.dev
+      http:
+        paths:
+          - path: /ui/login
+            pathType: Exact
+            backend:
+              service:
+                name: litellm
+                port:
+                  number: 4000
