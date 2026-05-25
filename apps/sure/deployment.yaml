@@ -1,0 +1,149 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: sure-app-storage
+  namespace: apps
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sure-web
+  namespace: apps
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: sure-web
+  template:
+    metadata:
+      labels:
+        app: sure-web
+    spec:
+      containers:
+        - name: sure
+          image: ghcr.io/we-promise/sure:stable
+          ports:
+            - containerPort: 3000
+          env:
+            - name: SELF_HOSTED
+              value: "true"
+            - name: RAILS_FORCE_SSL
+              value: "false"
+            - name: RAILS_ASSUME_SSL
+              value: "true"
+            - name: DB_HOST
+              value: sure-postgres
+            - name: DB_PORT
+              value: "5432"
+            - name: POSTGRES_DB
+              value: sure_production
+            - name: POSTGRES_USER
+              value: sure_user
+            - name: REDIS_URL
+              value: redis://sure-redis:6379/1
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: sure-env
+                  key: POSTGRES_PASSWORD
+            - name: SECRET_KEY_BASE
+              valueFrom:
+                secretKeyRef:
+                  name: sure-env
+                  key: SECRET_KEY_BASE
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 3000
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 3000
+            initialDelaySeconds: 60
+            periodSeconds: 30
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "512Mi"
+            limits:
+              cpu: "1000m"
+              memory: "1Gi"
+          volumeMounts:
+            - name: app-storage
+              mountPath: /rails/storage
+      volumes:
+        - name: app-storage
+          persistentVolumeClaim:
+            claimName: sure-app-storage
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sure-worker
+  namespace: apps
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: sure-worker
+  template:
+    metadata:
+      labels:
+        app: sure-worker
+    spec:
+      containers:
+        - name: sure-worker
+          image: ghcr.io/we-promise/sure:stable
+          command:
+            - bundle
+            - exec
+            - sidekiq
+          env:
+            - name: SELF_HOSTED
+              value: "true"
+            - name: RAILS_FORCE_SSL
+              value: "false"
+            - name: RAILS_ASSUME_SSL
+              value: "true"
+            - name: DB_HOST
+              value: sure-postgres
+            - name: DB_PORT
+              value: "5432"
+            - name: POSTGRES_DB
+              value: sure_production
+            - name: POSTGRES_USER
+              value: sure_user
+            - name: REDIS_URL
+              value: redis://sure-redis:6379/1
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: sure-env
+                  key: POSTGRES_PASSWORD
+            - name: SECRET_KEY_BASE
+              valueFrom:
+                secretKeyRef:
+                  name: sure-env
+                  key: SECRET_KEY_BASE
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "256Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+          volumeMounts:
+            - name: app-storage
+              mountPath: /rails/storage
+      volumes:
+        - name: app-storage
+          persistentVolumeClaim:
+            claimName: sure-app-storage
