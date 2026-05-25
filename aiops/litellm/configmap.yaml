@@ -6,11 +6,16 @@ metadata:
 data:
   config.yaml: |
     model_list:
-      - model_name: chatgpt/gpt-5.5
+      - model_name: gpt-5.5
         model_info:
           mode: responses
         litellm_params:
           model: chatgpt/gpt-5.5
+      - model_name: gpt-5.4-mini
+        model_info:
+          mode: responses
+        litellm_params:
+          model: chatgpt/gpt-5.4-mini
 
     general_settings:
       master_key: os.environ/LITELLM_MASTER_KEY
