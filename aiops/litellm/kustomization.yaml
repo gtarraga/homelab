@@ -5,9 +5,9 @@ resources:
   - configmap.yaml
   - postgres.yaml
   - redis.yaml
+  - pvc.yaml
   - deployment.yaml
   - service.yaml
   - middleware.yaml
   - ingress.yaml
-  - hpa.yaml
   - pdb.yaml

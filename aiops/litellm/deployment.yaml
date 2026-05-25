@@ -53,6 +53,8 @@ spec:
               value: "60"
             - name: PROMETHEUS_MULTIPROC_DIR
               value: /prometheus_multiproc
+            - name: CHATGPT_TOKEN_DIR
+              value: /var/lib/litellm/chatgpt
             - name: PROXY_BASE_URL
               value: https://litellm.stoneforge.dev
             - name: HOME
@@ -76,6 +78,8 @@ spec:
               readOnly: true
             - name: prometheus-multiproc
               mountPath: /prometheus_multiproc
+            - name: chatgpt-tokens
+              mountPath: /var/lib/litellm/chatgpt
           readinessProbe:
             httpGet:
               path: /health/readiness
@@ -103,3 +107,6 @@ spec:
         - name: prometheus-multiproc
           emptyDir:
             sizeLimit: 64Mi
+        - name: chatgpt-tokens
+          persistentVolumeClaim:
+            claimName: litellm-chatgpt-tokens
