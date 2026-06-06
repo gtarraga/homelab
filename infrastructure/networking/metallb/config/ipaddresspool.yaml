@@ -6,7 +6,16 @@ metadata:
 spec:
   addresses:
     - 192.168.1.50-192.168.1.53
-    - 192.168.1.55-192.168.1.69
+    - 192.168.1.56-192.168.1.69
+---
+apiVersion: metallb.io/v1beta1
+kind: IPAddressPool
+metadata:
+  name: homeassistant
+  namespace: metallb-system
+spec:
+  addresses:
+    - 192.168.1.55/32
 ---
 apiVersion: metallb.io/v1beta1
 kind: IPAddressPool

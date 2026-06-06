@@ -13,6 +13,18 @@ spec:
 apiVersion: metallb.io/v1beta1
 kind: L2Advertisement
 metadata:
+  name: homeassistant
+  namespace: metallb-system
+spec:
+  ipAddressPools:
+    - homeassistant
+  nodeSelectors:
+    - matchLabels:
+        kubernetes.io/hostname: cradle
+---
+apiVersion: metallb.io/v1beta1
+kind: L2Advertisement
+metadata:
   name: homeassistant-mqtt
   namespace: metallb-system
 spec:
