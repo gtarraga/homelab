@@ -1,0 +1,109 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mqtt-default-config
+  namespace: homeassistant
+data:
+  mosquitto.conf: |
+    listener 1883
+    allow_anonymous true
+    persistence true
+    persistence_location /mosquitto/data/
+    log_dest file /mosquitto/log/mosquitto.log
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mqtt
+  namespace: homeassistant
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: mqtt
+  template:
+    metadata:
+      labels:
+        app: mqtt
+    spec:
+      nodeSelector:
+        kubernetes.io/hostname: cradle
+      initContainers:
+        - name: seed-config
+          image: busybox:1.36
+          command:
+            - sh
+            - -c
+            - |
+              [ -f /mosquitto/config/mosquitto.conf ] || cp /seed/mosquitto.conf /mosquitto/config/mosquitto.conf
+          volumeMounts:
+            - name: config
+              mountPath: /mosquitto/config
+            - name: default-config
+              mountPath: /seed
+              readOnly: true
+      containers:
+        - name: mqtt
+          image: eclipse-mosquitto:2
+          ports:
+            - name: mqtt
+              containerPort: 1883
+              protocol: TCP
+          readinessProbe:
+            tcpSocket:
+              port: 1883
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            tcpSocket:
+              port: 1883
+            initialDelaySeconds: 15
+            periodSeconds: 30
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 250m
+              memory: 256Mi
+          volumeMounts:
+            - name: config
+              mountPath: /mosquitto/config
+            - name: data
+              mountPath: /mosquitto/data
+            - name: log
+              mountPath: /mosquitto/log
+      volumes:
+        - name: config
+          persistentVolumeClaim:
+            claimName: mqtt-config
+        - name: data
+          persistentVolumeClaim:
+            claimName: mqtt-data
+        - name: log
+          persistentVolumeClaim:
+            claimName: mqtt-log
+        - name: default-config
+          configMap:
+            name: mqtt-default-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mqtt
+  namespace: homeassistant
+  annotations:
+    metallb.io/address-pool: homeassistant-mqtt
+    metallb.io/loadBalancerIPs: 192.168.1.54
+spec:
+  type: LoadBalancer
+  externalTrafficPolicy: Local
+  selector:
+    app: mqtt
+  ports:
+    - name: mqtt
+      port: 1883
+      targetPort: 1883
+      protocol: TCP
