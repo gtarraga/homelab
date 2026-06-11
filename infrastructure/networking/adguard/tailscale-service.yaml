@@ -1,0 +1,25 @@
+apiVersion: tailscale.com/v1alpha1
+kind: TailscaleService
+metadata:
+  name: adguard-dns
+  namespace: infra
+spec:
+  service: adguard
+  port: 53
+  protocol: udp
+  tags:
+    - dns-server
+  hostname: adguard-dns
+---
+apiVersion: tailscale.com/v1alpha1
+kind: TailscaleService
+metadata:
+  name: adguard-http
+  namespace: infra
+spec:
+  service: adguard
+  port: 5501
+  protocol: tcp
+  tags:
+    - adguard-ui
+  hostname: adguard-ui

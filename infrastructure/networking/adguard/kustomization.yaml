@@ -6,4 +6,5 @@ resources:
   - deployment.yaml
   - service.yaml
   - ingress.yaml
+  - tailscale-service.yaml
   - adguard-config.sops.yaml
