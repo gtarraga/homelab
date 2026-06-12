@@ -18,8 +18,10 @@ spec:
       labels:
         app: adguard
     spec:
-      # Keep pinned while local-path PVCs are on jitte. DNS exposure now uses MetalLB,
-      # not hostNetwork, so this can move once storage is shared/migrated.
+      # DNS must also be reachable on jitte's Tailscale IP for tailnet split DNS.
+      # Keep pinned while local-path PVCs are on jitte.
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
       nodeSelector:
         kubernetes.io/hostname: jitte
       initContainers:

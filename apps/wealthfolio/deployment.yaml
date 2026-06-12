@@ -17,7 +17,7 @@ spec:
         fsGroup: 1000
       containers:
         - name: wealthfolio
-          image: ghcr.io/wealthfolio/wealthfolio:3.5.1
+          image: ghcr.io/wealthfolio/wealthfolio:3.5.2
           ports:
             - containerPort: 8088
           env:

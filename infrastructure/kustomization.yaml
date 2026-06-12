@@ -7,5 +7,6 @@ resources:
   - networking/adguard
   - networking/oidc-proxy
   - networking/cloudflared
+  - networking/traefik
   - networking/metallb
   - networking/unifi
