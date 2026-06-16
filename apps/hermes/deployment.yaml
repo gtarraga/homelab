@@ -81,6 +81,10 @@ spec:
           volumeMounts:
             - name: data
               mountPath: /opt/data
+            - name: config-hooks
+              mountPath: /etc/cont-init.d/03-custom-providers
+              subPath: 03-custom-providers
+              readOnly: true
           readinessProbe:
             tcpSocket:
               port: api
@@ -99,3 +103,7 @@ spec:
         - name: data
           persistentVolumeClaim:
             claimName: hermes-data
+        - name: config-hooks
+          configMap:
+            name: hermes-config-hooks
+            defaultMode: 0555
