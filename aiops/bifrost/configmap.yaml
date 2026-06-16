@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: bifrost-config
+  namespace: aiops
+data:
+  config.json: |
+    {
+      "$schema": "https://www.getbifrost.ai/schema",
+      "encryption_key": "env.BIFROST_ENCRYPTION_KEY",
+      "client": {
+        "initial_pool_size": 500,
+        "drop_excess_requests": true,
+        "enable_logging": true,
+        "log_retention_days": 30
+      },
+      "config_store": {
+        "enabled": true
+      }
+    }
