@@ -15,6 +15,10 @@ data:
         "log_retention_days": 30
       },
       "config_store": {
-        "enabled": true
+        "enabled": true,
+        "type": "sqlite",
+        "config": {
+          "path": "/app/data/bifrost.db"
+        }
       }
     }
