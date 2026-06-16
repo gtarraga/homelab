@@ -27,3 +27,23 @@ resource "aws_ssm_parameter" "tailscale_terraform_api_key" {
     ignore_changes = [value]
   }
 }
+
+resource "aws_ssm_parameter" "hermes_dashboard_basic_auth_password" {
+  name  = "/homelab/apps/hermes/HERMES_DASHBOARD_BASIC_AUTH_PASSWORD"
+  type  = "SecureString"
+  value = "bootstrap-replace-me"
+
+  lifecycle {
+    ignore_changes = [value]
+  }
+}
+
+resource "aws_ssm_parameter" "hermes_dashboard_basic_auth_secret" {
+  name  = "/homelab/apps/hermes/HERMES_DASHBOARD_BASIC_AUTH_SECRET"
+  type  = "SecureString"
+  value = "bootstrap-replace-me"
+
+  lifecycle {
+    ignore_changes = [value]
+  }
+}

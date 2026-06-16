@@ -50,12 +50,15 @@ spec:
               value: "0.0.0.0"
             - name: HERMES_DASHBOARD_PORT
               value: "9119"
-            - name: HERMES_DASHBOARD_INSECURE
-              value: "1"
+            - name: HERMES_DASHBOARD_BASIC_AUTH_USERNAME
+              value: admin
             - name: HERMES_UID
               value: "10000"
             - name: HERMES_GID
               value: "10000"
+          envFrom:
+            - secretRef:
+                name: hermes-dashboard-auth
           securityContext:
             runAsUser: 0
             runAsNonRoot: false
