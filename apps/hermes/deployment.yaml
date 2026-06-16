@@ -85,6 +85,9 @@ spec:
               mountPath: /etc/cont-init.d/03-custom-providers
               subPath: 03-custom-providers
               readOnly: true
+            - name: config-hooks
+              mountPath: /etc/hermes-config-hooks
+              readOnly: true
           readinessProbe:
             tcpSocket:
               port: api
