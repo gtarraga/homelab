@@ -76,6 +76,10 @@ spec:
               mountPath: /app/config.yaml
               subPath: config.yaml
               readOnly: true
+            - name: litellm-config
+              mountPath: /app/callbacks.py
+              subPath: callbacks.py
+              readOnly: true
             - name: prometheus-multiproc
               mountPath: /prometheus_multiproc
             - name: chatgpt-tokens

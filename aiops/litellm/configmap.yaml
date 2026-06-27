@@ -43,6 +43,8 @@ data:
       json_logs: true
       callbacks:
         - prometheus
+        - callbacks.proxy_handler_instance
+        - callbacks.mealie_handler
       service_callback:
         - prometheus_system
       prometheus_initialize_budget_metrics: true
@@ -53,3 +55,103 @@ data:
         host: os.environ/REDIS_HOST
         port: os.environ/REDIS_PORT
         password: os.environ/REDIS_PASSWORD
+  callbacks.py: |
+    import json
+    from typing import Literal, Optional, Union
+
+    from litellm.integrations.custom_logger import CustomLogger
+    from litellm.proxy.proxy_server import UserAPIKeyAuth, DualCache
+
+
+    CHATGPT_MODELS = {"gpt-5.5", "gpt-5.4-mini"}
+
+
+    class MealieJsonSchemaFix(CustomLogger):
+        """Strip json_schema response_format for Mealie — replace with json_object
+        and inject the schema into the prompt. Only triggers for the Mealie API key."""
+
+        async def async_pre_call_hook(
+            self,
+            user_api_key_dict: UserAPIKeyAuth,
+            cache: DualCache,
+            data: dict,
+            call_type: Literal[
+                "completion",
+                "text_completion",
+                "embeddings",
+                "image_generation",
+                "moderation",
+                "audio_transcription",
+                "pass_through_endpoint",
+                "rerank",
+                "mcp_call",
+                "anthropic_messages",
+            ],
+        ) -> Optional[Union[Exception, str, dict]]:
+            if getattr(user_api_key_dict, "key_alias", None) != "Mealie":
+                return data
+
+            response_format = data.get("response_format")
+            if not response_format or response_format.get("type") != "json_schema":
+                return data
+
+            json_schema = response_format.get("json_schema", {})
+            data["response_format"] = {"type": "json_object"}
+
+            schema_str = json.dumps(json_schema, indent=2)
+            instruction = (
+                "You must respond with a single valid JSON object matching this schema "
+                "exactly. Do not include any text outside the JSON.\n"
+                f"Schema:\n{schema_str}"
+            )
+
+            messages = data.get("messages") or []
+            if messages and messages[0].get("role") == "system":
+                messages[0]["content"] = f"{messages[0]['content']}\n\n{instruction}"
+            else:
+                messages.insert(0, {"role": "system", "content": instruction})
+            data["messages"] = messages
+
+            return data
+
+
+    class SystemToDeveloper(CustomLogger):
+        async def async_pre_call_hook(
+            self,
+            user_api_key_dict: UserAPIKeyAuth,
+            cache: DualCache,
+            data: dict,
+            call_type: Literal[
+                "completion",
+                "text_completion",
+                "embeddings",
+                "image_generation",
+                "moderation",
+                "audio_transcription",
+                "pass_through_endpoint",
+                "rerank",
+                "mcp_call",
+                "anthropic_messages",
+            ],
+        ) -> Optional[Union[Exception, str, dict]]:
+            model = data.get("model", "")
+            if not (model.startswith("chatgpt/") or model in CHATGPT_MODELS):
+                return data
+
+            system_content = data.pop("system", None)
+            if system_content:
+                messages = data.get("messages") or []
+                messages.insert(0, {"role": "developer", "content": system_content})
+                data["messages"] = messages
+
+            for key in ("messages", "input"):
+                items = data.get(key)
+                if isinstance(items, list):
+                    for msg in items:
+                        if isinstance(msg, dict) and msg.get("role") == "system":
+                            msg["role"] = "developer"
+            return data
+
+
+    proxy_handler_instance = SystemToDeveloper()
+    mealie_handler = MealieJsonSchemaFix()
