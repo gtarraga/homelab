@@ -5,6 +5,4 @@ metadata:
   namespace: kube-system
 spec:
   valuesContent: |-
-    service:
-      externalIPs:
-        - 100.116.188.19
+    {}
