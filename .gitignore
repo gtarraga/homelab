@@ -17,3 +17,10 @@ terraform.rc
 # Environment variables
 .env
 .env.*
+
+# Docs (keep ADRs public)
+docs/
+!docs/adr/
+
+# Local config
+.pi/
