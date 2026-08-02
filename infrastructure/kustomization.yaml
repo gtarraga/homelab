@@ -5,6 +5,7 @@ resources:
   - controllers/external-secrets
   - controllers/external-dns
   - networking/adguard
+  - networking/coredns
   - networking/oidc-proxy
   - networking/cloudflared
   - networking/traefik
