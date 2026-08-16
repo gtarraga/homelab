@@ -24,3 +24,14 @@ docs/
 
 # Local config
 .pi/
+
+# Local agent instructions
+AGENTS.md
+CLAUDE.md
+
+# Local OS/editor noise
+.DS_Store
+
+# SOPS temporary plaintext files
+*.sops.yaml.new
+*.sops.yaml.tmp
