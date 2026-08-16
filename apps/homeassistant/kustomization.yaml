@@ -6,3 +6,4 @@ resources:
   - mqtt.yaml
   - homeassistant.yaml
   - zigbee2mqtt.yaml
+  - esphome.yaml
