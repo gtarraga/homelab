@@ -1,0 +1,11 @@
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: mtg-meta-tailnet
+  namespace: projects
+spec:
+  ipAllowList:
+    sourceRange:
+      - 100.64.0.0/10
+      - 192.168.1.0/24
+      - 10.42.0.0/16
