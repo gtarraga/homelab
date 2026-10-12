@@ -24,7 +24,7 @@ spec:
         fsGroup: 1000
       containers:
         - name: mtg-meta
-          image: docker.io/library/mtg-meta:homelab-1
+          image: docker.io/library/mtg-meta:homelab-2
           imagePullPolicy: Never
           ports:
             - name: http
