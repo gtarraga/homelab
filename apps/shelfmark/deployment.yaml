@@ -1,0 +1,131 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: shelfmark
+  namespace: apps
+spec:
+  replicas: 1
+  revisionHistoryLimit: 3
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: shelfmark
+  template:
+    metadata:
+      labels:
+        app: shelfmark
+    spec:
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 1000
+        runAsNonRoot: true
+        fsGroup: 1000
+        fsGroupChangePolicy: OnRootMismatch
+      affinity:
+        podAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchLabels:
+                  app: calibre
+              topologyKey: kubernetes.io/hostname
+      containers:
+        - name: shelfmark
+          image: ghcr.io/calibrain/shelfmark:latest@sha256:4ef757349c3c7a7d90ba95b1e2a46ce4dd460a4776efbcf2aa1b1c476e7d5de5
+          ports:
+            - name: http
+              containerPort: 8084
+          env:
+            - name: TZ
+              value: Europe/Madrid
+            - name: AUTH_METHOD
+              value: cwa
+            - name: CWA_DB_PATH
+              value: /auth/app.db
+            - name: SESSION_COOKIE_SECURE
+              value: "true"
+            - name: ONBOARDING
+              value: "false"
+            - name: LOG_ROOT
+              value: /config/logs
+            - name: TMP_DIR
+              value: /config/download-staging
+            - name: INGEST_DIR
+              value: /books
+            - name: CALIBRE_WEB_URL
+              value: https://calibre.stoneforge.dev
+            - name: LIBRARY_CHECK_CALIBRE_ENABLED
+              value: "true"
+            - name: CALIBRE_LIBRARY_DB_PATH
+              value: /calibre-library/metadata.db
+            - name: SEARCH_MODE
+              value: universal
+            - name: METADATA_PROVIDER
+              value: openlibrary
+            - name: OPENLIBRARY_ENABLED
+              value: "true"
+            - name: DIRECT_DOWNLOAD_ENABLED
+              value: "true"
+            - name: AA_MIRROR_URLS
+              value: https://annas-archive.gl
+            - name: SUPPORTED_FORMATS
+              value: epub,mobi,azw3,pdf
+            - name: MAX_CONCURRENT_DOWNLOADS
+              value: "1"
+          resources:
+            requests:
+              cpu: 100m
+              memory: 512Mi
+            limits:
+              cpu: "2"
+              memory: 3Gi
+          startupProbe:
+            httpGet:
+              path: /api/health
+              port: http
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 60
+          readinessProbe:
+            httpGet:
+              path: /api/health
+              port: http
+            periodSeconds: 10
+            timeoutSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /api/health
+              port: http
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 6
+          volumeMounts:
+            - name: config
+              mountPath: /config
+            - name: ingest
+              mountPath: /books
+            - name: calibre-config
+              mountPath: /auth
+              readOnly: true
+            - name: library
+              mountPath: /calibre-library
+              readOnly: true
+            - name: shm
+              mountPath: /dev/shm
+      volumes:
+        - name: config
+          persistentVolumeClaim:
+            claimName: shelfmark-config
+        - name: ingest
+          persistentVolumeClaim:
+            claimName: calibre-ingest-longhorn
+        - name: calibre-config
+          persistentVolumeClaim:
+            claimName: calibre-config-longhorn
+        - name: library
+          persistentVolumeClaim:
+            claimName: calibre-library-longhorn
+        - name: shm
+          emptyDir:
+            medium: Memory
+            sizeLimit: 512Mi
