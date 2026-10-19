@@ -1,0 +1,55 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: longhorn-node-prerequisites
+  namespace: longhorn-system
+spec:
+  selector:
+    matchLabels:
+      app: longhorn-node-prerequisites
+  template:
+    metadata:
+      labels:
+        app: longhorn-node-prerequisites
+    spec:
+      automountServiceAccountToken: false
+      hostPID: true
+      nodeSelector:
+        node.longhorn.io/create-default-disk: "true"
+      initContainers:
+        - name: prepare
+          image: ubuntu:24.04
+          command:
+            - /bin/sh
+            - -ec
+            - nsenter --target 1 --mount --uts --ipc --net --pid --root --wd -- /bin/sh -s < /scripts/prepare-node.sh
+          securityContext:
+            privileged: true
+          resources:
+            requests:
+              cpu: 10m
+              memory: 64Mi
+          volumeMounts:
+            - name: script
+              mountPath: /scripts
+              readOnly: true
+      containers:
+        - name: ready
+          image: registry.k8s.io/pause:3.10
+          securityContext:
+            runAsUser: 65534
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: [ALL]
+          resources:
+            requests:
+              cpu: 1m
+              memory: 8Mi
+            limits:
+              memory: 16Mi
+      volumes:
+        - name: script
+          configMap:
+            name: longhorn-node-prerequisites
