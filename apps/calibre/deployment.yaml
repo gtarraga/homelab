@@ -64,10 +64,10 @@ spec:
       volumes:
         - name: config
           persistentVolumeClaim:
-            claimName: calibre-config
+            claimName: calibre-config-longhorn
         - name: library
           persistentVolumeClaim:
-            claimName: calibre-library
+            claimName: calibre-library-longhorn
         - name: ingest
           persistentVolumeClaim:
-            claimName: calibre-ingest
+            claimName: calibre-ingest-longhorn
