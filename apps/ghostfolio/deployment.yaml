@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
       - name: ghostfolio
-        image: ghostfolio/ghostfolio:3.4.0
+        image: ghcr.io/gtarraga/vendor-node-ghostfolio@sha256:686172b7293a5e71ced573547c4e968e6d4e9ad639e652baf9edfca016236ac7
         ports:
         - containerPort: 3333
         env:
@@ -75,7 +75,7 @@ spec:
           readOnly: true
       initContainers:
       - name: prepare-node-trust
-        image: docker.io/ghostfolio/ghostfolio@sha256:5e4e8b538534dd7c219f9c03f16cba56a88f9225a3408dab7931895eba3061b0
+        image: ghcr.io/gtarraga/vendor-node-ghostfolio@sha256:686172b7293a5e71ced573547c4e968e6d4e9ad639e652baf9edfca016236ac7
         imagePullPolicy: IfNotPresent
         command:
         - node

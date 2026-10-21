@@ -19,7 +19,7 @@ spec:
         kubernetes.io/hostname: cradle
       containers:
       - name: zigbee2mqtt
-        image: ghcr.io/koenkk/zigbee2mqtt:latest
+        image: ghcr.io/gtarraga/vendor-node-zigbee2mqtt@sha256:80a13bcc1f240329a5c83b4cd57779393816f5bc0e34ba23c1a2b4e1fc2024a5
         ports:
         - name: http
           containerPort: 8080
@@ -72,7 +72,7 @@ spec:
         emptyDir: {}
       initContainers:
       - name: prepare-node-trust
-        image: ghcr.io/koenkk/zigbee2mqtt@sha256:addbfb08fcef2e4477de1535636118241e10d13e898fbe4d9faba8a4d7396311
+        image: ghcr.io/gtarraga/vendor-node-zigbee2mqtt@sha256:80a13bcc1f240329a5c83b4cd57779393816f5bc0e34ba23c1a2b4e1fc2024a5
         imagePullPolicy: Always
         command:
         - node

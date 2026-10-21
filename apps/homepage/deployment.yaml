@@ -17,7 +17,7 @@ spec:
         fsGroup: 1000
       containers:
       - name: homepage
-        image: ghcr.io/gethomepage/homepage:v1.4.0
+        image: ghcr.io/gtarraga/vendor-node-homepage@sha256:ffd8923373037d325595cc10792403eca9fd7d26ae5f6c612c3f40dcc5acb8f4
         ports:
         - containerPort: 3000
         env:
@@ -54,7 +54,7 @@ spec:
         emptyDir: {}
       initContainers:
       - name: prepare-node-trust
-        image: ghcr.io/gethomepage/homepage@sha256:63434aafeb3d49be1f21ebd3c5d777fe5b7794c31342daad4e96f09b72a57188
+        image: ghcr.io/gtarraga/vendor-node-homepage@sha256:ffd8923373037d325595cc10792403eca9fd7d26ae5f6c612c3f40dcc5acb8f4
         imagePullPolicy: IfNotPresent
         command:
         - node

@@ -26,7 +26,7 @@ spec:
       terminationGracePeriodSeconds: 60
       containers:
         - name: litellm
-          image: ghcr.io/berriai/litellm@sha256:b3db76b5251485ab332bb91b30984991c6f53144b5c1c4371b4bd9766749e45f
+          image: ghcr.io/gtarraga/vendor-node-litellm@sha256:0b3230b6ed286eb8177b765dbefb7ee62ebdb8752a3c2eb0bb0577c48455e791
           imagePullPolicy: IfNotPresent
           command:
             - sh
@@ -141,7 +141,7 @@ spec:
             name: litellm-emudhra-trust
       initContainers:
         - name: prepare-certificate-trust
-          image: ghcr.io/berriai/litellm@sha256:b3db76b5251485ab332bb91b30984991c6f53144b5c1c4371b4bd9766749e45f
+          image: ghcr.io/gtarraga/vendor-node-litellm@sha256:0b3230b6ed286eb8177b765dbefb7ee62ebdb8752a3c2eb0bb0577c48455e791
           imagePullPolicy: IfNotPresent
           command:
             - /app/.venv/bin/python3

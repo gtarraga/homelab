@@ -22,7 +22,7 @@ spec:
         fsGroupChangePolicy: OnRootMismatch
       containers:
         - name: hermes
-          image: nousresearch/hermes-agent@sha256:9ad3b04ec916ea2c2da22358fd43b024c788d74073210695af88bfc2e63869b4
+          image: ghcr.io/gtarraga/vendor-node-hermes@sha256:2dcc54f2b72f127c6e105c8ed988e12cc159b5a20f3f92a9a7bde9081f880048
           imagePullPolicy: IfNotPresent
           command:
             - /init
@@ -136,7 +136,7 @@ spec:
             name: hermes-emudhra-trust
       initContainers:
         - name: prepare-certificate-trust
-          image: nousresearch/hermes-agent@sha256:9ad3b04ec916ea2c2da22358fd43b024c788d74073210695af88bfc2e63869b4
+          image: ghcr.io/gtarraga/vendor-node-hermes@sha256:2dcc54f2b72f127c6e105c8ed988e12cc159b5a20f3f92a9a7bde9081f880048
           imagePullPolicy: IfNotPresent
           command:
             - /opt/hermes/.venv/bin/python3
