@@ -13,8 +13,6 @@ spec:
       labels:
         app: linkding
     spec:
-      nodeSelector:
-        kubernetes.io/arch: amd64
       containers:
         - name: linkding
           image: sissbruecker/linkding@sha256:61b2eb9eed8e5772a473fb7f1f8923e046cb8cbbeb50e88150afd5ff287d4060

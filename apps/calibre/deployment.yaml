@@ -16,8 +16,6 @@ spec:
       labels:
         app: calibre
     spec:
-      nodeSelector:
-        kubernetes.io/arch: amd64
       containers:
         - name: calibre
           image: crocodilestick/calibre-web-automated@sha256:5e00373854247750cc3e4479b492ae09293ff5e06ed10177f226634d97888679

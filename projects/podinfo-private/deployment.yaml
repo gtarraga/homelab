@@ -16,7 +16,6 @@ spec:
         emudhra-trust-policy-sha256: dc5e263f54663591c103d37685127016e9eb60372187bf76e3d3901c101f8aef
     spec:
       nodeSelector:
-        kubernetes.io/arch: amd64
         location: edge
       tolerations:
         - key: location

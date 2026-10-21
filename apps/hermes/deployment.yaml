@@ -16,8 +16,6 @@ spec:
       labels:
         app: hermes
     spec:
-      nodeSelector:
-        kubernetes.io/arch: amd64
       terminationGracePeriodSeconds: 60
       securityContext:
         fsGroup: 10000
