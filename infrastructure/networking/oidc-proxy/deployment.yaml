@@ -16,7 +16,7 @@ spec:
       serviceAccountName: oidc-proxy
       containers:
         - name: oidc-proxy
-          image: ghcr.io/gtarraga/oidc-proxy:latest
+          image: ghcr.io/gtarraga/oidc-proxy@sha256:f0d7f09de11e01c05e3bae6fdb9acdd2a9165a3e39f5d52a7bc1dcbb9a4f67d8
           imagePullPolicy: Always
           env:
             - name: PUBLIC_ISSUER_URL
