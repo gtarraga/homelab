@@ -24,7 +24,7 @@ spec:
         fsGroup: 1000
       containers:
       - name: mtg-meta
-        image: docker.io/library/mtg-meta:homelab-2
+        image: docker.io/library/mtg-meta:emudhra-20261021
         imagePullPolicy: Never
         ports:
         - name: http
@@ -80,7 +80,7 @@ spec:
         emptyDir: {}
       initContainers:
       - name: prepare-node-trust
-        image: docker.io/library/mtg-meta:homelab-2
+        image: docker.io/library/mtg-meta:emudhra-20261021
         imagePullPolicy: Never
         command:
         - bun
