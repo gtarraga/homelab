@@ -235,7 +235,6 @@ data:
                 raise ValueError("Filtered CA store validation failed")
             print(str(source) + ": retained " + str(len(roots)) + " trusted CA certificates")
         system.chmod(0o755)
-        output.chmod(0o755)
 
 
     if __name__ == "__main__":
