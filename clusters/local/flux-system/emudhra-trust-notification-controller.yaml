@@ -1,0 +1,47 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: notification-controller
+  namespace: flux-system
+spec:
+  template:
+    spec:
+      initContainers:
+      - name: prepare-ca-trust
+        image: ghcr.io/fluxcd/notification-controller@sha256:87806dc20caff40b37280ea3155cc9ef3e995402997c49a8f9f9c6bff57e1499
+        command:
+        - sh
+        - /trust-policy/filter-emudhra.sh
+        securityContext:
+          runAsUser: 0
+          runAsNonRoot: false
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop:
+            - ALL
+        volumeMounts:
+        - name: emudhra-trust-policy
+          mountPath: /trust-policy
+          readOnly: true
+        - name: emudhra-trust
+          mountPath: /patched-trust
+      containers:
+      - name: manager
+        image: ghcr.io/fluxcd/notification-controller@sha256:87806dc20caff40b37280ea3155cc9ef3e995402997c49a8f9f9c6bff57e1499
+        env:
+        - name: SSL_CERT_FILE
+          value: /etc/ssl/certs/ca-certificates.crt
+        - name: SSL_CERT_DIR
+          value: /etc/ssl/certs
+        volumeMounts:
+        - name: emudhra-trust
+          mountPath: /etc/ssl/certs
+          subPath: system
+          readOnly: true
+      volumes:
+      - name: emudhra-trust
+        emptyDir: {}
+      - name: emudhra-trust-policy
+        configMap:
+          name: emudhra-system-trust

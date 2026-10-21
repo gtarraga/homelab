@@ -3,3 +3,9 @@ kind: Kustomization
 resources:
 - gotk-components.yaml
 - gotk-sync.yaml
+- emudhra-trust-policy.yaml
+patches:
+- path: emudhra-trust-helm-controller.yaml
+- path: emudhra-trust-kustomize-controller.yaml
+- path: emudhra-trust-notification-controller.yaml
+- path: emudhra-trust-source-controller.yaml

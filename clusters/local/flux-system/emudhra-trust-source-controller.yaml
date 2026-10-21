@@ -1,0 +1,47 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: source-controller
+  namespace: flux-system
+spec:
+  template:
+    spec:
+      initContainers:
+      - name: prepare-ca-trust
+        image: ghcr.io/fluxcd/source-controller@sha256:7382d002cffeed2d877331353f95797e89c0aa7ecb432e661eeeda3e590b3293
+        command:
+        - sh
+        - /trust-policy/filter-emudhra.sh
+        securityContext:
+          runAsUser: 0
+          runAsNonRoot: false
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop:
+            - ALL
+        volumeMounts:
+        - name: emudhra-trust-policy
+          mountPath: /trust-policy
+          readOnly: true
+        - name: emudhra-trust
+          mountPath: /patched-trust
+      containers:
+      - name: manager
+        image: ghcr.io/fluxcd/source-controller@sha256:7382d002cffeed2d877331353f95797e89c0aa7ecb432e661eeeda3e590b3293
+        env:
+        - name: SSL_CERT_FILE
+          value: /etc/ssl/certs/ca-certificates.crt
+        - name: SSL_CERT_DIR
+          value: /etc/ssl/certs
+        volumeMounts:
+        - name: emudhra-trust
+          mountPath: /etc/ssl/certs
+          subPath: system
+          readOnly: true
+      volumes:
+      - name: emudhra-trust
+        emptyDir: {}
+      - name: emudhra-trust-policy
+        configMap:
+          name: emudhra-system-trust
