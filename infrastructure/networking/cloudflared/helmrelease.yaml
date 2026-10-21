@@ -16,6 +16,8 @@ spec:
         namespace: flux-system
   values:
     replicaCount: 1
+    image:
+      tag: "2026.10.2"
   # Force http2; QUIC handshakes time out on this network path.
   postRenderers:
     - kustomize:
