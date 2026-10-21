@@ -22,7 +22,7 @@ spec:
         effect: NoSchedule
       containers:
       - name: gtarraga-com
-        image: ghcr.io/gtarraga/personal-site:latest
+        image: ghcr.io/gtarraga/personal-site@sha256:ed4663f830fbe949c5bdf7f66b43fd99822f951d4bd8e44557a76f1e8fbef639
         imagePullPolicy: Always
         ports:
         - containerPort: 8080
@@ -47,7 +47,7 @@ spec:
           readOnly: true
       initContainers:
       - name: prepare-node-trust
-        image: ghcr.io/gtarraga/personal-site@sha256:62c79236f309688d8482dee360598545c186d0b67356363b99d28da261f64345
+        image: ghcr.io/gtarraga/personal-site@sha256:ed4663f830fbe949c5bdf7f66b43fd99822f951d4bd8e44557a76f1e8fbef639
         imagePullPolicy: Always
         command:
         - node

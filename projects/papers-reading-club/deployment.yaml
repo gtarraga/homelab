@@ -19,7 +19,7 @@ spec:
         runAsGroup: 1000
       containers:
       - name: papers-reading-club
-        image: ghcr.io/gtarraga/papers-reading-club:latest
+        image: ghcr.io/gtarraga/papers-reading-club@sha256:307a035ef1996973ff91b3f4ac8acc4033b0d090b5563c69efd1b41e712d6450
         imagePullPolicy: Always
         ports:
         - containerPort: 3000
@@ -66,7 +66,7 @@ spec:
         emptyDir: {}
       initContainers:
       - name: prepare-node-trust
-        image: ghcr.io/gtarraga/papers-reading-club@sha256:56d5ce5dddcb02e3419e0e927ec77afb13f807c45e67b17cd4e888e83e82d820
+        image: ghcr.io/gtarraga/papers-reading-club@sha256:307a035ef1996973ff91b3f4ac8acc4033b0d090b5563c69efd1b41e712d6450
         imagePullPolicy: Always
         command:
         - node
