@@ -8,3 +8,8 @@ resources:
   - deployment.yaml
   - service.yaml
   - ingressroute.yaml
+configMapGenerator:
+  - name: unifi-certificate-trust
+    namespace: infra
+    files:
+      - filter-trust.sh

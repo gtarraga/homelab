@@ -17,9 +17,23 @@ spec:
     spec:
       nodeSelector:
         kubernetes.io/hostname: jitte
+      initContainers:
+        - name: prepare-certificate-trust
+          image: lscr.io/linuxserver/unifi-network-application:10.3.58@sha256:b01b8b127fd0dea381199958539eaae82dce10f9a23dab0c5cbfc836001cc7e0
+          command: ["/bin/sh", "/trust-policy/filter-trust.sh"]
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: [ALL]
+          volumeMounts:
+            - name: certificate-trust
+              mountPath: /patched-trust
+            - name: certificate-policy
+              mountPath: /trust-policy
+              readOnly: true
       containers:
         - name: unifi
-          image: lscr.io/linuxserver/unifi-network-application:10.3.58
+          image: lscr.io/linuxserver/unifi-network-application:10.3.58@sha256:b01b8b127fd0dea381199958539eaae82dce10f9a23dab0c5cbfc836001cc7e0
           imagePullPolicy: IfNotPresent
           ports:
             - name: https-admin
@@ -75,9 +89,17 @@ spec:
               value: "512"
             - name: MEM_LIMIT
               value: "1024"
+            - name: SSL_CERT_FILE
+              value: /etc/ssl/certs/ca-certificates.crt
+            - name: SSL_CERT_DIR
+              value: /etc/ssl/certs
           volumeMounts:
             - name: config
               mountPath: /config
+            - name: certificate-trust
+              mountPath: /etc/ssl/certs
+              subPath: system
+              readOnly: true
           readinessProbe:
             tcpSocket:
               port: 8443
@@ -103,3 +125,8 @@ spec:
         - name: config
           persistentVolumeClaim:
             claimName: unifi-config
+        - name: certificate-trust
+          emptyDir: {}
+        - name: certificate-policy
+          configMap:
+            name: unifi-certificate-trust
