@@ -23,6 +23,8 @@ spec:
         prometheus.io/path: /metrics
         prometheus.io/port: '4000'
     spec:
+      nodeSelector:
+        kubernetes.io/arch: amd64
       terminationGracePeriodSeconds: 60
       containers:
         - name: litellm

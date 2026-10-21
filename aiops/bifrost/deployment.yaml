@@ -24,6 +24,8 @@ spec:
         prometheus.io/path: /metrics
         prometheus.io/port: '8080'
     spec:
+      nodeSelector:
+        kubernetes.io/arch: amd64
       terminationGracePeriodSeconds: 60
       securityContext:
         fsGroup: 1000

@@ -30,6 +30,7 @@ spec:
       hostNetwork: true
       dnsPolicy: ClusterFirstWithHostNet
       nodeSelector:
+        kubernetes.io/arch: amd64
         kubernetes.io/hostname: cradle
       containers:
         - name: esphome
