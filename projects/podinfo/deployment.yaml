@@ -22,13 +22,123 @@ spec:
           effect: NoSchedule
       containers:
         - name: podinfo
-          image: ghcr.io/stefanprodan/podinfo:6.7.1
+          image: ghcr.io/stefanprodan/podinfo@sha256:862ca45e61b32392f7941a1bdfdbe5ff8b6899070135f1bdca1c287d0057fc94
           ports:
             - containerPort: 9898
           resources:
             requests:
-              cpu: "10m"
-              memory: "32Mi"
+              cpu: 10m
+              memory: 32Mi
             limits:
-              cpu: "100m"
-              memory: "64Mi"
+              cpu: 100m
+              memory: 64Mi
+          env:
+            - name: SSL_CERT_FILE
+              value: /etc/ssl/certs/ca-certificates.crt
+            - name: SSL_CERT_DIR
+              value: /etc/ssl/certs
+          volumeMounts:
+            - name: emudhra-trust
+              mountPath: /etc/ssl/certs
+              subPath: system
+              readOnly: true
+      initContainers:
+        - name: prepare-certificate-trust
+          image: ghcr.io/stefanprodan/podinfo@sha256:862ca45e61b32392f7941a1bdfdbe5ff8b6899070135f1bdca1c287d0057fc94
+          imagePullPolicy: IfNotPresent
+          command:
+            - /bin/sh
+            - /trust-policy/filter-emudhra.sh
+          securityContext:
+            runAsUser: 0
+            runAsGroup: 0
+            runAsNonRoot: false
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+          resources:
+            requests:
+              cpu: 10m
+              memory: 16Mi
+            limits:
+              cpu: 100m
+              memory: 32Mi
+          volumeMounts:
+            - name: emudhra-trust
+              mountPath: /patched-trust
+            - name: emudhra-trust-policy
+              mountPath: /trust-policy
+              readOnly: true
+      volumes:
+        - name: emudhra-trust
+          emptyDir:
+            sizeLimit: 8Mi
+        - name: emudhra-trust-policy
+          configMap:
+            name: podinfo-emudhra-trust
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: podinfo-emudhra-trust
+  namespace: projects
+data:
+  filter-emudhra.sh: |
+    #!/bin/sh
+    # Interim root distrust until vendor images ship the October 2026 CA updates.
+    # Exact DER certs from https://emudhra.we-have-a-problem.com/roots.json,
+    # SHA256 checked at policy generation. Preserve every other certificate.
+    # Uses only POSIX sh, mkdir, chmod; no downloads or package installation.
+    # Init and application must use the SAME immutable vendor image digest.
+    set -eu
+    umask 022
+    mkdir -p /patched-trust/system
+    newline='
+    '
+    carriage=$(printf '\r')
+    for source in /etc/ssl/certs/*; do
+      test -f "$source" || { echo "Unexpected CA directory or broken link: $source" >&2; exit 1; }
+      destination="/patched-trust/system/${source##*/}"
+      collecting=0
+      : > "$destination"
+      while IFS= read -r line || test -n "$line"; do
+        line=${line%"$carriage"}
+        case "$line" in
+          '-----BEGIN CERTIFICATE-----')
+            test "$collecting" = 0 || exit 1
+            collecting=1; buffer="$line$newline"; der=''
+            ;;
+          '-----END CERTIFICATE-----')
+            test "$collecting" = 1 || exit 1
+            buffer="$buffer$line$newline"
+            case "$der" in
+              # emSign Root TLS CA - G3 SHA256 7DD78D5F4F13459A83DFF9ABBBA62EDBAF6F2D102BF257FD712F4D9F2746ED8D
+              MIICKTCCAa+gAwIBAgIQDnYGcvFDRZ/I/gqwvAXjlDAKBggqhkjOPQQDAzBWMQswCQYDVQQGEwJJTjElMCMGA1UECgwcZU11ZGhyYSBUZWNobm9sb2dpZXMgTGltaXRlZDEgMB4GA1UEAwwXZW1TaWduIFJvb3QgVExTIENBIC0gRzMwHhcNMjQwMjA4MDgxOTMyWhcNNDkwMjA3MDgxOTMyWjBWMQswCQYDVQQGEwJJTjElMCMGA1UECgwcZU11ZGhyYSBUZWNobm9sb2dpZXMgTGltaXRlZDEgMB4GA1UEAwwXZW1TaWduIFJvb3QgVExTIENBIC0gRzMwdjAQBgcqhkjOPQIBBgUrgQQAIgNiAARfD9w/q1cWxL6D9bMGH6CQ4u+gAV6GN9s+PwQx9Bl4hC+0iU8QOk8mWO/RwXQy10DCSxT8vSIJClHKp+Ao4qJKdYeV0SwZ7LMQziyLfxIUOY6Grja/sQFwLKYf8EdDXAyjQjBAMB0GA1UdDgQWBBThOqshfPHjTVSu1HK3/YtZQiCQVDAOBgNVHQ8BAf8EBAMCAQYwDwYDVR0TAQH/BAUwAwEB/zAKBggqhkjOPQQDAwNoADBlAjBhCFTkly7Yl7+s4hiw+k6ZJTXT2AiIrvmsmfqPr5E7ecwXb6kXA5LTFd6rjwTuV3sCMQC9w6ZSbVq1mveMO6dKFziOzClTKCT2RFT6yXtq6nzgRICgBmiXbJAXsmZ8yAwjyWc=) : ;;
+              # emSign Root CS CA - G3 SHA256 F2EDAAFF3D9B701FB4D14C9F285F8C0BAD90FC3BCC1FA07D47F4718EDABA34A5
+              MIICKDCCAa2gAwIBAgIQAY/OySfBFvWcmX7cDM0uKzAKBggqhkjOPQQDAzBVMQswCQYDVQQGEwJJTjElMCMGA1UECgwcZU11ZGhyYSBUZWNobm9sb2dpZXMgTGltaXRlZDEfMB0GA1UEAwwWZW1TaWduIFJvb3QgQ1MgQ0EgLSBHMzAeFw0yNDAyMDgwODMzMTRaFw00OTAyMDcwODMzMTRaMFUxCzAJBgNVBAYTAklOMSUwIwYDVQQKDBxlTXVkaHJhIFRlY2hub2xvZ2llcyBMaW1pdGVkMR8wHQYDVQQDDBZlbVNpZ24gUm9vdCBDUyBDQSAtIEczMHYwEAYHKoZIzj0CAQYFK4EEACIDYgAESl9kM5D0VA/Og76dz5Xzw1hnGQ4fSR9993/qBkkvI48pXQVKOdyHCgAZThgWejQ8OpFRiTISjpabn4tfRFOYuzhApR/XxGbkg9X+2cEtbyghF9CdoF91W22V/R2EVe4xo0IwQDAdBgNVHQ4EFgQUaHQD+IXKjVRQVx0W4MjeRQ2rzS0wDgYDVR0PAQH/BAQDAgEGMA8GA1UdEwEB/wQFMAMBAf8wCgYIKoZIzj0EAwMDaQAwZgIxAK9OlACrFod3UgWY1ai+DF9sGFhahU59rv4jJyV01QaxGn0HErZ8gjHkngqe+tcFogIxAPTdW0hBmrGjhxBWdv9mZNdVFiJ4lrZ3ahvimsLhTQpnDBgiGKv6Ov1Fx/CE6yjIAg==) : ;;
+              # AAA Certificate Services SHA256 D7A7A0FB5D7E2731D771E9484EBCDEF71D5F0C3E0A2948782BC83EE0EA699EF4
+              MIIEMjCCAxqgAwIBAgIBATANBgkqhkiG9w0BAQUFADB7MQswCQYDVQQGEwJHQjEbMBkGA1UECAwSR3JlYXRlciBNYW5jaGVzdGVyMRAwDgYDVQQHDAdTYWxmb3JkMRowGAYDVQQKDBFDb21vZG8gQ0EgTGltaXRlZDEhMB8GA1UEAwwYQUFBIENlcnRpZmljYXRlIFNlcnZpY2VzMB4XDTA0MDEwMTAwMDAwMFoXDTI4MTIzMTIzNTk1OVowezELMAkGA1UEBhMCR0IxGzAZBgNVBAgMEkdyZWF0ZXIgTWFuY2hlc3RlcjEQMA4GA1UEBwwHU2FsZm9yZDEaMBgGA1UECgwRQ29tb2RvIENBIExpbWl0ZWQxITAfBgNVBAMMGEFBQSBDZXJ0aWZpY2F0ZSBTZXJ2aWNlczCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAL5AnfRu4ep2hxxNRUSOvkbIgwadwSr+GB+O5AL686tdUIoWMQuaBtDFcCLNSS1UY8y2bmhGC1Pqy0wkwLxyTurxFa70VJoSCsN6sjNg4tqJVfMiWPPe3M/vg4aijJRPn2jymJBGhCfHdr/jzDUsi14HZGWCwEiwqJH5YZ92IFCokcdmtet4YgNW8IoaE+oxox6gmf049vYnMlhvB/VruPsUK6+3qszWY19zjNoFmag4qMsXeDZRrOme9Hg6jc8P2ULimAyrL58OAd7vn5lJ8S3frHRNG5i1R8XlKdH5kBjHYpy+g8cmez6KJcfA3Z3mNWgQIJ2P2N7Sw4ScDV7oL8kCAwEAAaOBwDCBvTAdBgNVHQ4EFgQUoBEKIz6W8Qfs4q8p74Klf9AwpLQwDgYDVR0PAQH/BAQDAgEGMA8GA1UdEwEB/wQFMAMBAf8wewYDVR0fBHQwcjA4oDagNIYyaHR0cDovL2NybC5jb21vZG9jYS5jb20vQUFBQ2VydGlmaWNhdGVTZXJ2aWNlcy5jcmwwNqA0oDKGMGh0dHA6Ly9jcmwuY29tb2RvLm5ldC9BQUFDZXJ0aWZpY2F0ZVNlcnZpY2VzLmNybDANBgkqhkiG9w0BAQUFAAOCAQEACFb8AvCb6P+k+tZ7xkSAzk/ExfYAWMymtrwUSWgEdujm7l3sAg9g1o1QGE8mTgHj5rCl7r+8dFRBv/38ErjHT1r0iWAFf2C3BUrz9vHCv8S5dIa2LX1rzNLzRt0vxuBqw8M0Ayx9lt1awg6nCpnBBYurDC/zXDrPbDdVCYfeU0BsWO/8tqtlbgT2G9w84FoVxp7Z8VlIMCFlA2zs6SFz7JsDoeA3raAVGI/6ugLOpyypEBMs1OUIJqsil2D4kF501KKaU73yqWjgom7C12yxow+ev+to51byrvLjKzg6CYG1a4XXvi3tPxq3smPi9WIsgtRqAEFQ8TmDn5XpNpaYbg==) : ;;
+              # emSign ECC Root CA - G3 SHA256 86A1ECBA089C4A8D3BBE2734C612BA341D813E043CF9E8A862CD5C57A36BBE6B
+              MIICTjCCAdOgAwIBAgIKPPYHqWhwDtqLhDAKBggqhkjOPQQDAzBrMQswCQYDVQQGEwJJTjETMBEGA1UECxMKZW1TaWduIFBLSTElMCMGA1UEChMcZU11ZGhyYSBUZWNobm9sb2dpZXMgTGltaXRlZDEgMB4GA1UEAxMXZW1TaWduIEVDQyBSb290IENBIC0gRzMwHhcNMTgwMjE4MTgzMDAwWhcNNDMwMjE4MTgzMDAwWjBrMQswCQYDVQQGEwJJTjETMBEGA1UECxMKZW1TaWduIFBLSTElMCMGA1UEChMcZU11ZGhyYSBUZWNobm9sb2dpZXMgTGltaXRlZDEgMB4GA1UEAxMXZW1TaWduIEVDQyBSb290IENBIC0gRzMwdjAQBgcqhkjOPQIBBgUrgQQAIgNiAAQjpQy4LRL1KPOxst3iAhKAnjlfSU2fySU0WXTsuwYc58Byr+iuL+FBVIcUqEqy6HyC5ltqtdyzdc6LBtCGI79G1Y4PPwT01xySfvalY8L1X44uT6EYGQIrMgqCZH0Wk9GjQjBAMB0GA1UdDgQWBBR8XQKEE9TMipuBzhccLikenEhjQjAOBgNVHQ8BAf8EBAMCAQYwDwYDVR0TAQH/BAUwAwEB/zAKBggqhkjOPQQDAwNpADBmAjEAvvNhzwIQHWSVB7gYboiFBS+DCBeQyh+KTOgNG3qxrdWBCUfvO6wIBHxcmbHtRwfSAjEAnbpV/KlK6O3t5nYBQnvI+GDZjVGLVTv7jHvrZQnD+JbNR6iC8hZVdyR+EhCVBCyj) : ;;
+              *) printf '%s' "$buffer" >> "$destination" ;;
+            esac
+            collecting=0
+            ;;
+          *)
+            if test "$collecting" = 1; then
+              case "$line" in *[!A-Za-z0-9+/=]*) echo "Malformed PEM base64" >&2; exit 1 ;; esac
+              buffer="$buffer$line$newline"; der="$der$line"
+            else
+              printf '%s\n' "$line" >> "$destination"
+            fi
+            ;;
+        esac
+      done < "$source"
+      test "$collecting" = 0 || { echo "Unclosed certificate: $source" >&2; exit 1; }
+      chmod 0644 "$destination"
+    done
+    test -s /patched-trust/system/ca-certificates.crt
+    chmod 0755 /patched-trust/system
+    echo "Prepared filtered system CA store"
