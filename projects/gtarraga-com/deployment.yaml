@@ -16,20 +16,56 @@ spec:
       nodeSelector:
         location: edge
       tolerations:
-        - key: location
-          operator: Equal
-          value: edge
-          effect: NoSchedule
+      - key: location
+        operator: Equal
+        value: edge
+        effect: NoSchedule
       containers:
-        - name: gtarraga-com
-          image: ghcr.io/gtarraga/personal-site:latest
-          imagePullPolicy: Always
-          ports:
-            - containerPort: 8080
-          resources:
-            requests:
-              cpu: "10m"
-              memory: "32Mi"
-            limits:
-              cpu: "100m"
-              memory: "64Mi"
+      - name: gtarraga-com
+        image: ghcr.io/gtarraga/personal-site:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8080
+        resources:
+          requests:
+            cpu: 10m
+            memory: 32Mi
+          limits:
+            cpu: 100m
+            memory: 64Mi
+        env:
+        - name: NODE_OPTIONS
+          value: --use-openssl-ca
+        - name: SSL_CERT_FILE
+          value: /etc/ssl/certs/ca-certificates.crt
+        - name: SSL_CERT_DIR
+          value: /etc/ssl/certs
+        volumeMounts:
+        - name: node-patched-trust
+          mountPath: /etc/ssl/certs
+          subPath: system
+          readOnly: true
+      initContainers:
+      - name: prepare-node-trust
+        image: ghcr.io/gtarraga/personal-site@sha256:62c79236f309688d8482dee360598545c186d0b67356363b99d28da261f64345
+        imagePullPolicy: Always
+        command:
+        - node
+        - /trust-script/filter.cjs
+        volumeMounts:
+        - name: node-trust-script
+          mountPath: /trust-script
+          readOnly: true
+        - name: node-patched-trust
+          mountPath: /patched-trust
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+      volumes:
+      - name: node-trust-script
+        configMap:
+          name: node-emudhra-trust
+      - name: node-patched-trust
+        emptyDir: {}

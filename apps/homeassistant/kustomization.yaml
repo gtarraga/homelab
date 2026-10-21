@@ -7,3 +7,5 @@ resources:
   - homeassistant.yaml
   - zigbee2mqtt.yaml
   - esphome.yaml
+  - node-trust.yaml
+  - cast-media.yaml

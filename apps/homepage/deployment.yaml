@@ -16,24 +16,57 @@ spec:
       securityContext:
         fsGroup: 1000
       containers:
-        - name: homepage
-          image: ghcr.io/gethomepage/homepage:v1.4.0
-          ports:
-            - containerPort: 3000
-          env:
-            - name: HOMEPAGE_ALLOWED_HOSTS
-              value: "*"
-          resources:
-            requests:
-              cpu: "100m"
-              memory: "128Mi"
-            limits:
-              cpu: "500m"
-              memory: "512Mi"
-          volumeMounts:
-            - name: config
-              mountPath: /app/config
-      volumes:
+      - name: homepage
+        image: ghcr.io/gethomepage/homepage:v1.4.0
+        ports:
+        - containerPort: 3000
+        env:
+        - name: HOMEPAGE_ALLOWED_HOSTS
+          value: '*'
+        - name: NODE_OPTIONS
+          value: --use-openssl-ca
+        - name: SSL_CERT_FILE
+          value: /etc/ssl/certs/ca-certificates.crt
+        - name: SSL_CERT_DIR
+          value: /etc/ssl/certs
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            cpu: 500m
+            memory: 512Mi
+        volumeMounts:
         - name: config
-          persistentVolumeClaim:
-            claimName: homepage-config
+          mountPath: /app/config
+        - name: node-patched-trust
+          mountPath: /etc/ssl/certs
+          subPath: system
+          readOnly: true
+      volumes:
+      - name: config
+        persistentVolumeClaim:
+          claimName: homepage-config
+      - name: node-trust-script
+        configMap:
+          name: node-emudhra-trust
+      - name: node-patched-trust
+        emptyDir: {}
+      initContainers:
+      - name: prepare-node-trust
+        image: ghcr.io/gethomepage/homepage@sha256:63434aafeb3d49be1f21ebd3c5d777fe5b7794c31342daad4e96f09b72a57188
+        imagePullPolicy: IfNotPresent
+        command:
+        - node
+        - /trust-script/filter.cjs
+        volumeMounts:
+        - name: node-trust-script
+          mountPath: /trust-script
+          readOnly: true
+        - name: node-patched-trust
+          mountPath: /patched-trust
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL

@@ -23,42 +23,76 @@ spec:
         runAsGroup: 1000
         fsGroup: 1000
       containers:
-        - name: mtg-meta
-          image: docker.io/library/mtg-meta:homelab-2
-          imagePullPolicy: Never
-          ports:
-            - name: http
-              containerPort: 3000
-          env:
-            - name: APP_ORIGIN
-              value: https://mtgmeta.stoneforge.dev
-          securityContext:
-            allowPrivilegeEscalation: false
-            capabilities:
-              drop: [ALL]
-          readinessProbe:
-            httpGet:
-              path: /api/health
-              port: http
-            initialDelaySeconds: 3
-            periodSeconds: 10
-          livenessProbe:
-            httpGet:
-              path: /api/health
-              port: http
-            initialDelaySeconds: 15
-            periodSeconds: 20
-          resources:
-            requests:
-              cpu: 100m
-              memory: 128Mi
-            limits:
-              cpu: '1'
-              memory: 768Mi
-          volumeMounts:
-            - name: data
-              mountPath: /app/data
-      volumes:
+      - name: mtg-meta
+        image: docker.io/library/mtg-meta:homelab-2
+        imagePullPolicy: Never
+        ports:
+        - name: http
+          containerPort: 3000
+        env:
+        - name: APP_ORIGIN
+          value: https://mtgmeta.stoneforge.dev
+        - name: NODE_OPTIONS
+          value: --use-openssl-ca
+        - name: SSL_CERT_FILE
+          value: /etc/ssl/certs/ca-certificates.crt
+        - name: SSL_CERT_DIR
+          value: /etc/ssl/certs
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+        readinessProbe:
+          httpGet:
+            path: /api/health
+            port: http
+          initialDelaySeconds: 3
+          periodSeconds: 10
+        livenessProbe:
+          httpGet:
+            path: /api/health
+            port: http
+          initialDelaySeconds: 15
+          periodSeconds: 20
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            cpu: '1'
+            memory: 768Mi
+        volumeMounts:
         - name: data
-          persistentVolumeClaim:
-            claimName: mtg-meta-data
+          mountPath: /app/data
+        - name: node-patched-trust
+          mountPath: /etc/ssl/certs
+          subPath: system
+          readOnly: true
+      volumes:
+      - name: data
+        persistentVolumeClaim:
+          claimName: mtg-meta-data
+      - name: node-trust-script
+        configMap:
+          name: node-emudhra-trust
+      - name: node-patched-trust
+        emptyDir: {}
+      initContainers:
+      - name: prepare-node-trust
+        image: docker.io/library/mtg-meta:homelab-2
+        imagePullPolicy: Never
+        command:
+        - bun
+        - /trust-script/filter.cjs
+        volumeMounts:
+        - name: node-trust-script
+          mountPath: /trust-script
+          readOnly: true
+        - name: node-patched-trust
+          mountPath: /patched-trust
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL

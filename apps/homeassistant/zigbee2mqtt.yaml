@@ -18,43 +18,76 @@ spec:
       nodeSelector:
         kubernetes.io/hostname: cradle
       containers:
-        - name: zigbee2mqtt
-          image: ghcr.io/koenkk/zigbee2mqtt:latest
-          ports:
-            - name: http
-              containerPort: 8080
-              protocol: TCP
-          env:
-            - name: TZ
-              value: Europe/Madrid
-          readinessProbe:
-            tcpSocket:
-              port: 8080
-            initialDelaySeconds: 20
-            periodSeconds: 10
-            timeoutSeconds: 3
-            failureThreshold: 12
-          livenessProbe:
-            tcpSocket:
-              port: 8080
-            initialDelaySeconds: 60
-            periodSeconds: 30
-            timeoutSeconds: 3
-            failureThreshold: 6
-          resources:
-            requests:
-              cpu: 100m
-              memory: 256Mi
-            limits:
-              cpu: 500m
-              memory: 512Mi
-          volumeMounts:
-            - name: data
-              mountPath: /app/data
-      volumes:
+      - name: zigbee2mqtt
+        image: ghcr.io/koenkk/zigbee2mqtt:latest
+        ports:
+        - name: http
+          containerPort: 8080
+          protocol: TCP
+        env:
+        - name: TZ
+          value: Europe/Madrid
+        - name: NODE_OPTIONS
+          value: --use-openssl-ca
+        - name: SSL_CERT_FILE
+          value: /etc/ssl/certs/ca-certificates.crt
+        - name: SSL_CERT_DIR
+          value: /etc/ssl/certs
+        readinessProbe:
+          tcpSocket:
+            port: 8080
+          initialDelaySeconds: 20
+          periodSeconds: 10
+          timeoutSeconds: 3
+          failureThreshold: 12
+        livenessProbe:
+          tcpSocket:
+            port: 8080
+          initialDelaySeconds: 60
+          periodSeconds: 30
+          timeoutSeconds: 3
+          failureThreshold: 6
+        resources:
+          requests:
+            cpu: 100m
+            memory: 256Mi
+          limits:
+            cpu: 500m
+            memory: 512Mi
+        volumeMounts:
         - name: data
-          persistentVolumeClaim:
-            claimName: zigbee2mqtt-data
+          mountPath: /app/data
+        - name: node-patched-trust
+          mountPath: /etc/ssl/certs
+          subPath: system
+          readOnly: true
+      volumes:
+      - name: data
+        persistentVolumeClaim:
+          claimName: zigbee2mqtt-data
+      - name: node-trust-script
+        configMap:
+          name: node-emudhra-trust
+      - name: node-patched-trust
+        emptyDir: {}
+      initContainers:
+      - name: prepare-node-trust
+        image: ghcr.io/koenkk/zigbee2mqtt@sha256:addbfb08fcef2e4477de1535636118241e10d13e898fbe4d9faba8a4d7396311
+        imagePullPolicy: Always
+        command:
+        - node
+        - /trust-script/filter.cjs
+        volumeMounts:
+        - name: node-trust-script
+          mountPath: /trust-script
+          readOnly: true
+        - name: node-patched-trust
+          mountPath: /patched-trust
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
 ---
 apiVersion: v1
 kind: Service
@@ -65,10 +98,10 @@ spec:
   selector:
     app: zigbee2mqtt
   ports:
-    - name: http
-      port: 8080
-      targetPort: 8080
-      protocol: TCP
+  - name: http
+    port: 8080
+    targetPort: 8080
+    protocol: TCP
 ---
 apiVersion: networking.k8s.io/v1
 kind: Ingress
@@ -78,13 +111,13 @@ metadata:
 spec:
   ingressClassName: traefik
   rules:
-    - host: zigbee2mqtt.stoneforge.dev
-      http:
-        paths:
-          - path: /
-            pathType: Prefix
-            backend:
-              service:
-                name: zigbee2mqtt
-                port:
-                  number: 8080
+  - host: zigbee2mqtt.stoneforge.dev
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: zigbee2mqtt
+            port:
+              number: 8080

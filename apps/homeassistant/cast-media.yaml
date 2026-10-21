@@ -1,0 +1,137 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cast-media
+  namespace: homeassistant
+spec:
+  progressDeadlineSeconds: 600
+  replicas: 1
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      app: cast-media
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: cast-media
+    spec:
+      affinity:
+        podAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchLabels:
+                app: homeassistant
+            topologyKey: kubernetes.io/hostname
+      containers:
+      - command:
+        - node
+        - /app/mobile/cast-service.js
+        env:
+        - name: NODE_OPTIONS
+          value: --use-openssl-ca
+        - name: SSL_CERT_FILE
+          value: /etc/ssl/certs/ca-certificates.crt
+        - name: SSL_CERT_DIR
+          value: /etc/ssl/certs
+        envFrom:
+        - secretRef:
+            name: cast-media-config
+        image: node:22-alpine
+        imagePullPolicy: IfNotPresent
+        livenessProbe:
+          failureThreshold: 3
+          httpGet:
+            path: /healthz
+            port: http
+            scheme: HTTP
+          periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 1
+        name: cast-media
+        ports:
+        - containerPort: 8787
+          name: http
+          protocol: TCP
+        readinessProbe:
+          failureThreshold: 3
+          httpGet:
+            path: /healthz
+            port: http
+            scheme: HTTP
+          periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 1
+        resources:
+          limits:
+            cpu: '1'
+            memory: 256Mi
+          requests:
+            cpu: 50m
+            memory: 64Mi
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+          readOnlyRootFilesystem: true
+          runAsNonRoot: true
+          runAsUser: 1000
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+        volumeMounts:
+        - mountPath: /etc/ssl/certs
+          name: node-patched-trust
+          readOnly: true
+          subPath: system
+        - mountPath: /app
+          name: code
+          readOnly: true
+      dnsPolicy: ClusterFirstWithHostNet
+      hostNetwork: true
+      initContainers:
+      - command:
+        - node
+        - /trust-script/filter.cjs
+        image: docker.io/library/node@sha256:0a7108bf6c7bf5de370ffb1a3ed6be93d405b43ff159f681a8d18c0e2bc2e402
+        imagePullPolicy: IfNotPresent
+        name: prepare-node-trust
+        resources: {}
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+        volumeMounts:
+        - mountPath: /trust-script
+          name: node-trust-script
+          readOnly: true
+        - mountPath: /patched-trust
+          name: node-patched-trust
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      terminationGracePeriodSeconds: 30
+      volumes:
+      - configMap:
+          defaultMode: 420
+          name: node-emudhra-trust
+        name: node-trust-script
+      - emptyDir: {}
+        name: node-patched-trust
+      - configMap:
+          defaultMode: 420
+          items:
+          - key: cast-service.js
+            path: mobile/cast-service.js
+          - key: remote.js
+            path: src/lib/remote.js
+          - key: resolve.js
+            path: src/lib/resolve.js
+          - key: justwatch.js
+            path: src/justwatch.js
+          name: cast-media-code
+        name: code

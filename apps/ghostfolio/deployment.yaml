@@ -14,51 +14,86 @@ spec:
         app: ghostfolio
     spec:
       containers:
-        - name: ghostfolio
-          image: ghostfolio/ghostfolio:3.4.0
-          ports:
-            - containerPort: 3333
-          env:
-            - name: REDIS_HOST
-              value: ghostfolio-redis
-            - name: REDIS_PORT
-              value: "6379"
-            - name: REDIS_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: ghostfolio-env
-                  key: REDIS_PASSWORD
-            - name: ACCESS_TOKEN_SALT
-              valueFrom:
-                secretKeyRef:
-                  name: ghostfolio-env
-                  key: ACCESS_TOKEN_SALT
-            - name: JWT_SECRET_KEY
-              valueFrom:
-                secretKeyRef:
-                  name: ghostfolio-env
-                  key: JWT_SECRET_KEY
-            - name: DATABASE_URL
-              valueFrom:
-                secretKeyRef:
-                  name: ghostfolio-env
-                  key: DATABASE_URL
-          readinessProbe:
-            httpGet:
-              path: /api/v1/health
-              port: 3333
-            initialDelaySeconds: 20
-            periodSeconds: 10
-          livenessProbe:
-            httpGet:
-              path: /api/v1/health
-              port: 3333
-            initialDelaySeconds: 60
-            periodSeconds: 30
-          resources:
-            requests:
-              cpu: "250m"
-              memory: "512Mi"
-            limits:
-              cpu: "1000m"
-              memory: "1Gi"
+      - name: ghostfolio
+        image: ghostfolio/ghostfolio:3.4.0
+        ports:
+        - containerPort: 3333
+        env:
+        - name: REDIS_HOST
+          value: ghostfolio-redis
+        - name: REDIS_PORT
+          value: '6379'
+        - name: REDIS_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: ghostfolio-env
+              key: REDIS_PASSWORD
+        - name: ACCESS_TOKEN_SALT
+          valueFrom:
+            secretKeyRef:
+              name: ghostfolio-env
+              key: ACCESS_TOKEN_SALT
+        - name: JWT_SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: ghostfolio-env
+              key: JWT_SECRET_KEY
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: ghostfolio-env
+              key: DATABASE_URL
+        - name: NODE_OPTIONS
+          value: --use-openssl-ca
+        - name: SSL_CERT_FILE
+          value: /etc/ssl/certs/ca-certificates.crt
+        - name: SSL_CERT_DIR
+          value: /etc/ssl/certs
+        readinessProbe:
+          httpGet:
+            path: /api/v1/health
+            port: 3333
+          initialDelaySeconds: 20
+          periodSeconds: 10
+        livenessProbe:
+          httpGet:
+            path: /api/v1/health
+            port: 3333
+          initialDelaySeconds: 60
+          periodSeconds: 30
+        resources:
+          requests:
+            cpu: 250m
+            memory: 512Mi
+          limits:
+            cpu: 1000m
+            memory: 1Gi
+        volumeMounts:
+        - name: node-patched-trust
+          mountPath: /etc/ssl/certs
+          subPath: system
+          readOnly: true
+      initContainers:
+      - name: prepare-node-trust
+        image: docker.io/ghostfolio/ghostfolio@sha256:5e4e8b538534dd7c219f9c03f16cba56a88f9225a3408dab7931895eba3061b0
+        imagePullPolicy: IfNotPresent
+        command:
+        - node
+        - /trust-script/filter.cjs
+        volumeMounts:
+        - name: node-trust-script
+          mountPath: /trust-script
+          readOnly: true
+        - name: node-patched-trust
+          mountPath: /patched-trust
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+      volumes:
+      - name: node-trust-script
+        configMap:
+          name: node-emudhra-trust
+      - name: node-patched-trust
+        emptyDir: {}
