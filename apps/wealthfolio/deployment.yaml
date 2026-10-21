@@ -5,6 +5,8 @@ metadata:
   namespace: apps
 spec:
   replicas: 1
+  strategy:
+    type: Recreate
   selector:
     matchLabels:
       app: wealthfolio
@@ -13,11 +15,14 @@ spec:
       labels:
         app: wealthfolio
     spec:
+      nodeSelector:
+        kubernetes.io/arch: amd64
       securityContext:
         fsGroup: 1000
       containers:
         - name: wealthfolio
-          image: ghcr.io/wealthfolio/wealthfolio:3.5.2
+          image: docker.io/library/wealthfolio:3.5.2-emudhra-20261021
+          imagePullPolicy: Never
           ports:
             - containerPort: 8088
           env:
