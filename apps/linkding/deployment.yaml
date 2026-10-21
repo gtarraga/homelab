@@ -15,20 +15,157 @@ spec:
     spec:
       containers:
         - name: linkding
-          image: sissbruecker/linkding:1.45.0
+          image: sissbruecker/linkding@sha256:61b2eb9eed8e5772a473fb7f1f8923e046cb8cbbeb50e88150afd5ff287d4060
           ports:
             - containerPort: 9090
           resources:
             requests:
-              cpu: "100m"
-              memory: "256Mi"
+              cpu: 100m
+              memory: 256Mi
             limits:
-              cpu: "500m"
-              memory: "512Mi"
+              cpu: 500m
+              memory: 512Mi
           volumeMounts:
             - name: data
               mountPath: /etc/linkding/data
+            - name: emudhra-trust
+              mountPath: /etc/ssl/certs
+              subPath: system
+              readOnly: true
+            - name: emudhra-trust
+              mountPath: /etc/linkding/.venv/lib/python3.13/site-packages/certifi/cacert.pem
+              subPath: certifi.pem
+              readOnly: true
+          env:
+            - name: SSL_CERT_FILE
+              value: /etc/ssl/certs/ca-certificates.crt
+            - name: SSL_CERT_DIR
+              value: /etc/ssl/certs
       volumes:
         - name: data
           persistentVolumeClaim:
             claimName: linkding-data
+        - name: emudhra-trust
+          emptyDir:
+            sizeLimit: 8Mi
+        - name: emudhra-trust-policy
+          configMap:
+            name: linkding-emudhra-trust
+      initContainers:
+        - name: prepare-certificate-trust
+          image: sissbruecker/linkding@sha256:61b2eb9eed8e5772a473fb7f1f8923e046cb8cbbeb50e88150afd5ff287d4060
+          imagePullPolicy: IfNotPresent
+          command:
+            - /etc/linkding/.venv/bin/python3
+            - /trust-policy/filter-emudhra.py
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            limits:
+              cpu: 250m
+              memory: 128Mi
+          volumeMounts:
+            - name: emudhra-trust
+              mountPath: /patched-trust
+            - name: emudhra-trust-policy
+              mountPath: /trust-policy
+              readOnly: true
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: linkding-emudhra-trust
+  namespace: apps
+data:
+  filter-emudhra.py: |
+    """Prepare per-image CA stores for an initContainer; no network or dependencies.
+
+    Interim root distrust, pending vendor images with the October 2026 CA updates.
+    Fingerprints: https://emudhra.we-have-a-problem.com/roots.json
+    Mount the output system directory and certifi.pem read-only into the application.
+    The input stores are copied from the SAME image digest as the application.
+    """
+
+    import hashlib
+    import os
+    from pathlib import Path
+    import re
+    import ssl
+
+    import certifi
+
+
+    BLOCKED = {
+        # emSign Root TLS CA - G3
+        "7DD78D5F4F13459A83DFF9ABBBA62EDBAF6F2D102BF257FD712F4D9F2746ED8D",
+        # emSign Root CS CA - G3
+        "F2EDAAFF3D9B701FB4D14C9F285F8C0BAD90FC3BCC1FA07D47F4718EDABA34A5",
+        # AAA Certificate Services
+        "D7A7A0FB5D7E2731D771E9484EBCDEF71D5F0C3E0A2948782BC83EE0EA699EF4",
+        # emSign ECC Root CA - G3
+        "86A1ECBA089C4A8D3BBE2734C612BA341D813E043CF9E8A862CD5C57A36BBE6B",
+    }
+    CERTIFICATE = re.compile(
+        rb"-----BEGIN CERTIFICATE-----.*?-----END CERTIFICATE-----", re.DOTALL
+    )
+
+
+    def filter_pem(data):
+        certificates = CERTIFICATE.findall(data)
+        if len(certificates) != data.count(b"-----BEGIN CERTIFICATE-----"):
+            raise ValueError("Malformed certificate boundary")
+        # Validate every certificate, including retained custom roots.
+        def replace(match):
+            pem = match.group().decode("ascii")
+            der = ssl.PEM_cert_to_DER_cert(pem)
+            context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+            context.load_verify_locations(cadata=pem)
+            return b"" if hashlib.sha256(der).hexdigest().upper() in BLOCKED else match.group()
+
+        return CERTIFICATE.sub(replace, data), len(certificates)
+
+
+    def prepare(output=Path("/patched-trust")):
+        system = output / "system"
+        system.mkdir(parents=True, exist_ok=True)
+        # Dereference hash symlinks, so no link can lead back to an unfiltered root.
+        for source in Path("/etc/ssl/certs").iterdir():
+            if source.is_dir():
+                raise ValueError("Unexpected nested CA directory: " + str(source))
+            if not source.exists():
+                raise ValueError("Broken CA symlink: " + str(source))
+            original = source.read_bytes()
+            filtered, count = filter_pem(original)
+            if count and not CERTIFICATE.search(filtered):
+                continue
+            destination = system / source.name
+            destination.write_bytes(filtered)
+            destination.chmod(source.stat().st_mode & 0o777)
+
+        for source, destination in [
+            (Path("/etc/ssl/certs/ca-certificates.crt"), system / "ca-certificates.crt"),
+            (Path(certifi.where()), output / "certifi.pem"),
+        ]:
+            filtered, count = filter_pem(source.read_bytes())
+            if not count:
+                raise ValueError("Empty input CA bundle: " + str(source))
+            destination.write_bytes(filtered)
+            destination.chmod(0o644)
+            context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+            context.load_verify_locations(cafile=str(destination))
+            roots = context.get_ca_certs(binary_form=True)
+            if not roots or any(hashlib.sha256(root).hexdigest().upper() in BLOCKED for root in roots):
+                raise ValueError("Filtered CA store validation failed")
+            print(str(source) + ": retained " + str(len(roots)) + " trusted CA certificates")
+        system.chmod(0o755)
+        output.chmod(0o755)
+
+
+    if __name__ == "__main__":
+        prepare()
