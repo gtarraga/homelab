@@ -40,8 +40,6 @@ spec:
       annotations:
         emudhra-trust-policy-sha256: dc5e263f54663591c103d37685127016e9eb60372187bf76e3d3901c101f8aef
     spec:
-      nodeSelector:
-        kubernetes.io/arch: amd64
       containers:
         - name: minio
           image: quay.io/minio/minio@sha256:d249d1fb6966de4d8ad26c04754b545205ff15a62e4fd19ebd0f26fa5baacbc0

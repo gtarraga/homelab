@@ -45,3 +45,74 @@ spec:
       - --cloudflare-proxied
       - --default-targets=$(CF_TUNNEL_ID).cfargotunnel.com
       - --force-default-targets
+
+  postRenderers:
+    - kustomize:
+        patches:
+          - target:
+              kind: Deployment
+              name: infra-external-dns
+            patch: |
+              apiVersion: apps/v1
+              kind: Deployment
+              metadata:
+                name: infra-external-dns
+                namespace: infra
+              spec:
+                template:
+                  metadata:
+                    annotations:
+                      security.stoneforge.dev/ca-filter-sha256: 3eb1f8c2158f0f152f27f5e4bcb2c9b00b9c4a6f0dd932739a53ec4c756861b7
+                  spec:
+                    nodeSelector:
+                      kubernetes.io/arch: amd64
+                    securityContext:
+                      fsGroup: 65532
+                    volumes:
+                      - name: emudhra-trust
+                        emptyDir:
+                          sizeLimit: 8Mi
+                      - name: emudhra-trust-policy
+                        configMap:
+                          name: emudhra-static-filter
+                          defaultMode: 365
+                    initContainers:
+                      - name: prepare-certificate-trust
+                        image: registry.k8s.io/external-dns/external-dns@sha256:ddc7f4212ed09a21024deb1f470a05240837712e74e4b9f6d1f2632ff10672e7
+                        imagePullPolicy: IfNotPresent
+                        command:
+                          - /trust-policy/ca-filter
+                          - /etc/ssl/certs
+                          - /patched-trust/system
+                        securityContext:
+                          allowPrivilegeEscalation: false
+                          readOnlyRootFilesystem: true
+                          capabilities:
+                            drop:
+                              - ALL
+                        resources:
+                          requests:
+                            cpu: 10m
+                            memory: 16Mi
+                          limits:
+                            cpu: 250m
+                            memory: 64Mi
+                        volumeMounts:
+                          - name: emudhra-trust
+                            mountPath: /patched-trust
+                          - name: emudhra-trust-policy
+                            mountPath: /trust-policy
+                            readOnly: true
+                    containers:
+                      - name: external-dns
+                        image: registry.k8s.io/external-dns/external-dns@sha256:ddc7f4212ed09a21024deb1f470a05240837712e74e4b9f6d1f2632ff10672e7
+                        env:
+                          - name: SSL_CERT_FILE
+                            value: /etc/ssl/certs/ca-certificates.crt
+                          - name: SSL_CERT_DIR
+                            value: /etc/ssl/certs
+                        volumeMounts:
+                          - name: emudhra-trust
+                            mountPath: /etc/ssl/certs
+                            subPath: system
+                            readOnly: true

@@ -1,0 +1,94 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: cert-manager
+  namespace: cert-manager
+spec:
+  chart:
+    spec:
+      chart: cert-manager
+      reconcileStrategy: ChartVersion
+      sourceRef:
+        kind: HelmRepository
+        name: cert-manager
+        namespace: flux-system
+      version: v1.20.0
+  interval: 10m
+  targetNamespace: cert-manager
+  values:
+    clusterResourceNamespace: cert-manager
+    crds:
+      enabled: true
+    dns01RecursiveNameservers: 1.1.1.1:53,8.8.8.8:53
+    dns01RecursiveNameserversOnly: true
+
+  postRenderers:
+    - kustomize:
+        patches:
+          - target:
+              kind: Deployment
+              name: cert-manager-cert-manager
+            patch: |
+              apiVersion: apps/v1
+              kind: Deployment
+              metadata:
+                name: cert-manager-cert-manager
+                namespace: cert-manager
+              spec:
+                template:
+                  metadata:
+                    annotations:
+                      security.stoneforge.dev/ca-filter-sha256: 3eb1f8c2158f0f152f27f5e4bcb2c9b00b9c4a6f0dd932739a53ec4c756861b7
+                  spec:
+                    nodeSelector:
+                      kubernetes.io/arch: amd64
+                    securityContext:
+                      fsGroup: 65532
+                    volumes:
+                      - name: emudhra-trust
+                        emptyDir:
+                          sizeLimit: 8Mi
+                      - name: emudhra-trust-policy
+                        configMap:
+                          name: emudhra-static-filter
+                          defaultMode: 365
+                    initContainers:
+                      - name: prepare-certificate-trust
+                        image: quay.io/jetstack/cert-manager-controller@sha256:b9009aa6b45b59da1363a26dab15aee7d77c7ce01ac2c1cf05ecd1121462db16
+                        imagePullPolicy: IfNotPresent
+                        command:
+                          - /trust-policy/ca-filter
+                          - /etc/ssl/certs
+                          - /patched-trust/system
+                        securityContext:
+                          allowPrivilegeEscalation: false
+                          readOnlyRootFilesystem: true
+                          capabilities:
+                            drop:
+                              - ALL
+                        resources:
+                          requests:
+                            cpu: 10m
+                            memory: 16Mi
+                          limits:
+                            cpu: 250m
+                            memory: 64Mi
+                        volumeMounts:
+                          - name: emudhra-trust
+                            mountPath: /patched-trust
+                          - name: emudhra-trust-policy
+                            mountPath: /trust-policy
+                            readOnly: true
+                    containers:
+                      - name: cert-manager-controller
+                        image: quay.io/jetstack/cert-manager-controller@sha256:b9009aa6b45b59da1363a26dab15aee7d77c7ce01ac2c1cf05ecd1121462db16
+                        env:
+                          - name: SSL_CERT_FILE
+                            value: /etc/ssl/certs/ca-certificates.crt
+                          - name: SSL_CERT_DIR
+                            value: /etc/ssl/certs
+                        volumeMounts:
+                          - name: emudhra-trust
+                            mountPath: /etc/ssl/certs
+                            subPath: system
+                            readOnly: true

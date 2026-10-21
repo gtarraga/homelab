@@ -40,3 +40,74 @@ spec:
       - name: aws-web-identity-token
         mountPath: /var/run/secrets/aws
         readOnly: true
+
+  postRenderers:
+    - kustomize:
+        patches:
+          - target:
+              kind: Deployment
+              name: infra-external-secrets
+            patch: |
+              apiVersion: apps/v1
+              kind: Deployment
+              metadata:
+                name: infra-external-secrets
+                namespace: infra
+              spec:
+                template:
+                  metadata:
+                    annotations:
+                      security.stoneforge.dev/ca-filter-sha256: 3eb1f8c2158f0f152f27f5e4bcb2c9b00b9c4a6f0dd932739a53ec4c756861b7
+                  spec:
+                    nodeSelector:
+                      kubernetes.io/arch: amd64
+                    securityContext:
+                      fsGroup: 65532
+                    volumes:
+                      - name: emudhra-trust
+                        emptyDir:
+                          sizeLimit: 8Mi
+                      - name: emudhra-trust-policy
+                        configMap:
+                          name: emudhra-static-filter
+                          defaultMode: 365
+                    initContainers:
+                      - name: prepare-certificate-trust
+                        image: ghcr.io/external-secrets/external-secrets@sha256:876e627dbee5b0edd12da49b035469d12418cd6c3c4be5e383ae6a82e8bd4565
+                        imagePullPolicy: IfNotPresent
+                        command:
+                          - /trust-policy/ca-filter
+                          - /etc/ssl/certs
+                          - /patched-trust/system
+                        securityContext:
+                          allowPrivilegeEscalation: false
+                          readOnlyRootFilesystem: true
+                          capabilities:
+                            drop:
+                              - ALL
+                        resources:
+                          requests:
+                            cpu: 10m
+                            memory: 16Mi
+                          limits:
+                            cpu: 250m
+                            memory: 64Mi
+                        volumeMounts:
+                          - name: emudhra-trust
+                            mountPath: /patched-trust
+                          - name: emudhra-trust-policy
+                            mountPath: /trust-policy
+                            readOnly: true
+                    containers:
+                      - name: external-secrets
+                        image: ghcr.io/external-secrets/external-secrets@sha256:876e627dbee5b0edd12da49b035469d12418cd6c3c4be5e383ae6a82e8bd4565
+                        env:
+                          - name: SSL_CERT_FILE
+                            value: /etc/ssl/certs/ca-certificates.crt
+                          - name: SSL_CERT_DIR
+                            value: /etc/ssl/certs
+                        volumeMounts:
+                          - name: emudhra-trust
+                            mountPath: /etc/ssl/certs
+                            subPath: system
+                            readOnly: true

@@ -1,0 +1,9 @@
+FROM alpine:3.23 AS build
+RUN apk add --no-cache build-base
+WORKDIR /src
+COPY ca-filter.c ca-filter-roots.h ./
+RUN cc -std=c11 -Wall -Wextra -Werror -Os -static -s ca-filter.c -o /ca-filter
+
+FROM scratch
+COPY --from=build /ca-filter /ca-filter
+ENTRYPOINT ["/ca-filter"]

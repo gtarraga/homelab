@@ -12,3 +12,5 @@ resources:
   - networking/metallb
   - networking/unifi
   - storage/longhorn
+  - controllers/cert-manager
+  - controllers/emudhra-trust-policy.yaml
