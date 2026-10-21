@@ -45,3 +45,6 @@ spec:
       - name: emudhra-trust-policy
         configMap:
           name: emudhra-system-trust
+    metadata:
+      annotations:
+        emudhra-trust-policy-sha256: dc5e263f54663591c103d37685127016e9eb60372187bf76e3d3901c101f8aef
