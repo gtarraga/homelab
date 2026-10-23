@@ -16,6 +16,8 @@ spec:
   template:
     metadata:
       annotations:
+        # Roll out the seeded configuration whenever its encrypted source changes.
+        adguard-config-sha256: d2503b0370066ebace5197c6f487c7a09adc57fe56fbb1aa3d7c87797d9c34ac
         emudhra-trust-policy-sha256: dc5e263f54663591c103d37685127016e9eb60372187bf76e3d3901c101f8aef
       labels:
         app: adguard
