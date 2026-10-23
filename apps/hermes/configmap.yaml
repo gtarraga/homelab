@@ -8,13 +8,8 @@ data:
     #!/command/with-contenv sh
     set -eu
 
-    mkdir -p /opt/data/plugins/model-providers/litellm
     mkdir -p /opt/data/plugins/model-providers/bifrost
 
-    cp /etc/hermes-config-hooks/litellm__init__.py \
-       /opt/data/plugins/model-providers/litellm/__init__.py
-    cp /etc/hermes-config-hooks/litellm_plugin.yaml \
-       /opt/data/plugins/model-providers/litellm/plugin.yaml
     cp /etc/hermes-config-hooks/bifrost__init__.py \
        /opt/data/plugins/model-providers/bifrost/__init__.py
     cp /etc/hermes-config-hooks/bifrost_plugin.yaml \
@@ -29,36 +24,14 @@ data:
         config = yaml.safe_load(config_path.read_text()) or {}
         providers = config.get('custom_providers') or []
         cleaned = [p for p in providers
-                   if isinstance(p, dict) and p.get('name') not in ('litellm', 'bifrost')]
+                   if isinstance(p, dict) and p.get('name') != 'bifrost']
         if len(cleaned) != len(providers):
             config['custom_providers'] = cleaned
             config_path.write_text(yaml.safe_dump(config, sort_keys=False))
-            print('[custom-providers] removed litellm/bifrost from custom_providers')
+            print('[custom-providers] removed bifrost from custom_providers')
     PY
 
-    echo "[custom-providers] litellm and bifrost plugins ready"
-
-  litellm__init__.py: |
-    from providers import register_provider
-    from providers.base import ProviderProfile
-
-    register_provider(ProviderProfile(
-        name="litellm",
-        aliases=("litellm",),
-        display_name="LiteLLM",
-        description="LiteLLM proxy — homelab",
-        env_vars=("LITELLM_API_KEY", "LITELLM_BASE_URL"),
-        base_url="http://litellm.aiops.svc.cluster.local:4000/v1",
-        auth_type="api_key",
-        fallback_models=("gpt-5.5", "gpt-5.4-mini"),
-        default_aux_model="gpt-5.4-mini",
-    ))
-
-  litellm_plugin.yaml: |
-    name: litellm
-    kind: model-provider
-    version: 1.0.0
-    description: LiteLLM proxy — homelab
+    echo "[custom-providers] bifrost plugin ready"
 
   bifrost__init__.py: |
     from providers import register_provider
