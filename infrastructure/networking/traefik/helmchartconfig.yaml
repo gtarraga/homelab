@@ -8,6 +8,19 @@ spec:
     image:
       tag: 3.6.9@sha256:9004e1cd1e33c5eb0b6ec02bc6cfda61fe9caca36751114b1c9c6662f01b264a
     versionOverride: 3.6.9
+    # Keep ingress reachable through the same node used by Tailnet split DNS.
+    nodeSelector:
+      kubernetes.io/hostname: jitte
+    ports:
+      web:
+        hostPort: 80
+      websecure:
+        hostPort: 443
+    # A single node cannot run two pods claiming the same host ports.
+    updateStrategy:
+      rollingUpdate:
+        maxSurge: 0
+        maxUnavailable: 1
     deployment:
       initContainers:
       - name: prepare-ca-trust
