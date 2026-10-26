@@ -24,11 +24,6 @@ jobs:
             node-image: node:22.23.4-bookworm-slim@sha256:5991875dfb80938dd8a6ba3fe3e96fd04929e70792762b3319d8caadbbe229bc
             node-path: /usr/local/bin/node
             dockerfile: Dockerfile
-          - app: hermes
-            app-image: docker.io/nousresearch/hermes-agent@sha256:9ad3b04ec916ea2c2da22358fd43b024c788d74073210695af88bfc2e63869b4
-            node-image: node:22.23.4-bookworm-slim@sha256:5991875dfb80938dd8a6ba3fe3e96fd04929e70792762b3319d8caadbbe229bc
-            node-path: /usr/local/bin/node
-            dockerfile: Dockerfile
           - app: homepage
             app-image: ghcr.io/gethomepage/homepage@sha256:63434aafeb3d49be1f21ebd3c5d777fe5b7794c31342daad4e96f09b72a57188
             node-image: node:22.23.4-alpine@sha256:ce8d97f7cfc7c5386421eb932df20a29df99b1a7f469f6157d5c9956702ffadc

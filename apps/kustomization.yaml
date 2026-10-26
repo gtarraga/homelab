@@ -9,7 +9,6 @@ resources:
   - wealthfolio
   - sure
   - homeassistant
-  - hermes
   - calibre
   - shelfmark
   - node-trust.yaml
