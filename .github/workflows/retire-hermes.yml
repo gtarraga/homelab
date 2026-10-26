@@ -1,0 +1,64 @@
+name: Retire Hermes secrets
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: terraform-refs/heads/main
+  cancel-in-progress: false
+
+env:
+  TF_IN_AUTOMATION: "true"
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ vars.AWS_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+      - uses: hashicorp/setup-terraform@v4
+        with:
+          terraform_wrapper: false
+      - name: Init
+        run: terraform -chdir=terraform init -input=false -backend-config=backend.tfvars
+      - name: Plan only retired secrets
+        run: |
+          terraform -chdir=terraform plan -input=false -no-color \
+            -target=module.aws_ssm.aws_ssm_parameter.hermes_dashboard_basic_auth_password \
+            -target=module.aws_ssm.aws_ssm_parameter.hermes_dashboard_basic_auth_secret \
+            -out=tfplan
+      - name: Verify cleanup scope
+        shell: python
+        run: |
+          import json
+          import subprocess
+          plan = json.loads(subprocess.check_output([
+              "terraform", "-chdir=terraform", "show", "-json", "tfplan"
+          ]))
+          expected = {
+              "module.aws_ssm.aws_ssm_parameter.hermes_dashboard_basic_auth_password",
+              "module.aws_ssm.aws_ssm_parameter.hermes_dashboard_basic_auth_secret",
+          }
+          changes = {
+              resource["address"]: resource["change"]["actions"]
+              for resource in plan.get("resource_changes", [])
+              if resource["change"]["actions"] != ["no-op"]
+          }
+          assert changes == {address: ["delete"] for address in expected}, "Unexpected cleanup scope"
+      - name: Delete retired secrets
+        run: terraform -chdir=terraform apply -input=false -auto-approve tfplan
+      - name: Verify secrets absent
+        shell: bash
+        run: |
+          set -euo pipefail
+          remaining=$(aws ssm describe-parameters \
+            --parameter-filters 'Key=Name,Option=BeginsWith,Values=/homelab/apps/hermes/' \
+            --query 'length(Parameters)' --output text)
+          test "$remaining" = 0
