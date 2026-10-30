@@ -22,17 +22,23 @@ spec:
         effect: NoSchedule
       containers:
       - name: gtarraga-com
-        image: ghcr.io/gtarraga/personal-site@sha256:338ef9f25308e3f2bcba3e607f2d6fc8263e822f222154f23e3556bcd4b7a17b
+        image: ghcr.io/gtarraga/personal-site@sha256:7d879be8c8018785525a55a13b63e78394bf0f0bfa77e5f38d8b79a640082a45
         imagePullPolicy: Always
         ports:
         - containerPort: 8080
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 8080
+          periodSeconds: 2
+          timeoutSeconds: 2
         resources:
           requests:
             cpu: 10m
-            memory: 32Mi
+            memory: 64Mi
           limits:
             cpu: 100m
-            memory: 64Mi
+            memory: 128Mi
         env:
         - name: NODE_OPTIONS
           value: --use-openssl-ca
@@ -47,7 +53,7 @@ spec:
           readOnly: true
       initContainers:
       - name: prepare-node-trust
-        image: ghcr.io/gtarraga/personal-site@sha256:338ef9f25308e3f2bcba3e607f2d6fc8263e822f222154f23e3556bcd4b7a17b
+        image: ghcr.io/gtarraga/personal-site@sha256:7d879be8c8018785525a55a13b63e78394bf0f0bfa77e5f38d8b79a640082a45
         imagePullPolicy: Always
         command:
         - node
