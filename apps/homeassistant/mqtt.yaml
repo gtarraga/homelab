@@ -6,7 +6,8 @@ metadata:
 data:
   mosquitto.conf: |
     listener 1883
-    allow_anonymous true
+    allow_anonymous false
+    password_file /mosquitto/auth/mosquitto.passwd
     persistence true
     persistence_location /mosquitto/data/
     log_dest file /mosquitto/log/mosquitto.log
@@ -30,6 +31,8 @@ spec:
     spec:
       nodeSelector:
         kubernetes.io/hostname: cradle
+      securityContext:
+        fsGroup: 1883
       initContainers:
         - name: seed-config
           image: busybox:1.36
@@ -75,6 +78,10 @@ spec:
               mountPath: /mosquitto/data
             - name: log
               mountPath: /mosquitto/log
+            - name: auth
+              mountPath: /mosquitto/auth/mosquitto.passwd
+              subPath: mosquitto.passwd
+              readOnly: true
       volumes:
         - name: config
           persistentVolumeClaim:
@@ -88,6 +95,10 @@ spec:
         - name: default-config
           configMap:
             name: mqtt-default-config
+        - name: auth
+          secret:
+            secretName: mqtt-broker-auth
+            defaultMode: 0440
 ---
 apiVersion: v1
 kind: Service

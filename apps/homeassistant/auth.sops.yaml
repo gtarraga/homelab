@@ -1,0 +1,98 @@
+apiVersion: v1
+kind: Secret
+type: Opaque
+data:
+    password: ENC[AES256_GCM,data:XjojkkLMvSA6xdabwy7gu3Wmu5fXu7VNdwhUgZvd2w7ov/CT9RxcQ7EKmqaR+fxuac7A40dnxyfh1jPj,iv:+fsCUqhPe093L5L1JUw6iMNUGaGDjNZxqvMEAoPVysY=,tag:n4jZahTKO3o/XMYdwBISzA==,type:str]
+    username: ENC[AES256_GCM,data:m/dNiTqoLLI8787Lk1wfo+AQDGU=,iv:354WGY5Td82MYnQJH9O53Gn0bQcU2GkvLv7pU4eAviI=,tag:azSLxz1brn827HdkRY/vwA==,type:str]
+metadata:
+    name: mqtt-homeassistant-auth
+    namespace: homeassistant
+sops:
+    age:
+        - enc: |
+            -----BEGIN AGE ENCRYPTED FILE-----
+            YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSBINk1BSkJCRXpoL2RpM3Uw
+            MFNZYldyZy90TjFVQitjdnk2ZlRmenRIVUcwCmlLM2pDVVpzQ2IwSW9GZ0RtT2cz
+            SXlKN2tmTDc5M0JnbGMwMS8zOXZ0RkkKLS0tIG5sKzRUWXQ1VUloOXptbkxRczdz
+            SkxMbEd4ckZ0ZmJ5WVlYV3dQWWZaSzQKdvyMvn1J30BomOg4vdRZ+QC9EYV05CAv
+            RnBtP6wFRv2xmzQbl7yW8HJyXpzMH8zFWHFV/J9HFKrHH4dryd6rEA==
+            -----END AGE ENCRYPTED FILE-----
+          recipient: age1rq7h60et6lty8yt7mlgk20y257ea977ayyhcjdgwt2rslrs7nepq6x4d9d
+    encrypted_regex: ^(data|stringData)$
+    lastmodified: "2026-11-01T20:51:13Z"
+    mac: ENC[AES256_GCM,data:4CBP0i3sZ+CLY7alJoaUuDDxowjjtJtR8EOHu+O96QFfzZz0WsF+ltyAGscrPT7vPUqfWQk/94yvVVY4BF+bA/aspSvq5uPVJCEsSJtw8gHLKj18PLD9nQK8IsfVtIMFXbmVcnX0xKpZPXIV04YkHoqyNz+aIUG3UE5JzQ+P6Rk=,iv:8VF/CLB0sxXyTXMs2YgfS9+uUcZSy0Z0vfSpc3EKp84=,tag:yXmr0te07KFEDCQqtTEwEQ==,type:str]
+    version: 3.13.3
+---
+apiVersion: v1
+kind: Secret
+type: Opaque
+data:
+    password: ENC[AES256_GCM,data:N6xIkgFdWgh6WAUOgIQSfenrK0g1VkoqxlGP0GAhkhUBJz0lYX/QLQWKCs+vphqjTkQFRHqMMRJMSH93,iv:0Sx7EO9jVj7l6jDydHCrQPL64qsgr6KjfYcHtUkuvgI=,tag:rNI29ogqXIYMgbNw6yGMKw==,type:str]
+    username: ENC[AES256_GCM,data:Ia3VxbzwBWJpEa8Q5EKl0A==,iv:AM8Y1bU2/OVZDSiuadbvO8KvbiZeh5s8ktQIjOM59mk=,tag:sO/Js27kvgHKlpq1wIIutw==,type:str]
+metadata:
+    name: mqtt-zigbee2mqtt-auth
+    namespace: homeassistant
+sops:
+    age:
+        - enc: |
+            -----BEGIN AGE ENCRYPTED FILE-----
+            YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSA0V2F0Q3l1VFZXL2JGN09X
+            L2NidXlacGlvQVZCZFhCaWdhZXpwT0s0S2xvCkdCZ25kUjE4akJnQmM2M1Z2REo0
+            eWk3YnhYQXR3YTFDSmkrMWNWMmpVYVEKLS0tIHRxaVdHYklKLy9EbGxUdXZXWnJL
+            YU8rdk1IUm80Rm1PZFBnNTBMdHFHN1EK9n60CQxTIerMQcyglrMnh6jIdBfwbSVx
+            HxK7Ni59G7/T56mXpIPqZPfEY0ZkB1KpSbMML9/0draIUHc/n9dmqw==
+            -----END AGE ENCRYPTED FILE-----
+          recipient: age1rq7h60et6lty8yt7mlgk20y257ea977ayyhcjdgwt2rslrs7nepq6x4d9d
+    encrypted_regex: ^(data|stringData)$
+    lastmodified: "2026-11-01T20:51:13Z"
+    mac: ENC[AES256_GCM,data:OTWW6b3Q4D5LU9oGe0BLPPW5drQu2At16sec9UI/J2AazEMfIGvdJAq20uLrBIduUJz4D+7F0iZpvEZPcrPvEXpT19XYHSffywkrcuTiNkkTbyqay60VwqDmyCHt+fXt3R1hPGY4Ds1Dqq8+FD3Uo92tCRSx36QIF/Gh5nYDfdc=,iv:xn+2Zb+TEz99AW6FohXU0lXg2fSoVDVvxxHNRtVM4OQ=,tag:DLBEwzSJ6R2+Kjf0F5HtFg==,type:str]
+    version: 3.13.3
+---
+apiVersion: v1
+kind: Secret
+type: Opaque
+data:
+    mosquitto.passwd: ENC[AES256_GCM,data:vh12yifufaIksb9DHY96Q1kBEAfC8hiu59hiK0neW/3FXUbac5wbPBbsGd6c8/ltGb7zjvjrVPICNmlfrAeMI2Mdjug6gTT6PZEN9xdwGDd2z2rrAfXPGUpjoNqJEfKBRFqv8M7oV676RSdUpwdo0GwEBOwC5NDahn4Wx/DdQkCz3j7u3Fe45HG4If3mWoN1DBWjK8AtyAKnQ2AzjeKYJKohgc4ypn46/H78mVx1kYJ+tvJt8AqFE62NZIU+OHfEcz5sEIY4431gjf77xIbIqhKHe7LR3KJreKR5tRqipC1tKpDw9z6wtUceMD4Irwjpc+mHeVPfBcoYyPaZvraeAUA4A8QpsLM1eRXjANJt9lbL3twJF+peUOBOafyRw/d2IjmKcoxtkSfbYHrjqvFFoaRH1Zbx4BMzGsHgiU+RpSxv7W0qnUczG33Sfrkc5kXbpxQIffzfxeI=,iv:22FuVC7a1jwnxdp++PQGVJXilMsPorW6WzpulpzeTJk=,tag:DNmtRq2NNFFOnhJPMfCyjA==,type:str]
+metadata:
+    name: mqtt-broker-auth
+    namespace: homeassistant
+sops:
+    age:
+        - enc: |
+            -----BEGIN AGE ENCRYPTED FILE-----
+            YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSBlSzh3cmxJeTI5a00zdXlM
+            Tm0yTmw1NnJna3dxVWFxaVF5aHZIMGJPQjFjCjFsS256TTltekdjd1VGYllUOFNq
+            dlZUYWNDVldLV1VScEJEZ2JRNjBQbWsKLS0tIHlnaGY2a0xwZDgxUFVUNUN4R1lT
+            Zk42WGZLTmlEbnR1VVlhT0Y1ek5Oc3MKiQE5VrGaNRkhax9dIteQQUo7KSd/Lqgq
+            Og2DLpZq90SThX7ywM/nDhFyN6wvQz0PAnjWY7M6R3OxqAnuIQm3mw==
+            -----END AGE ENCRYPTED FILE-----
+          recipient: age1rq7h60et6lty8yt7mlgk20y257ea977ayyhcjdgwt2rslrs7nepq6x4d9d
+    encrypted_regex: ^(data|stringData)$
+    lastmodified: "2026-11-01T20:51:13Z"
+    mac: ENC[AES256_GCM,data:6ZbwADKqNlFBDKhxyptlh7DVl46gA6aG1A9wNzpTD9EuT03SS2qTuAx4JvNyI52QayMGMrlfgvxL8HnOKYFPM8sZLChfZmbfUTLxKBBzAy2K26pnSbC8ZMpDTuBDFwASjA8HZpGs1cMcYUg9Yn2d/mrK8QEKd6bTx2HcYi2oFvc=,iv:Lh59nguddT9r4xgCTDNlcj9+KlXVlB3fzWAf6SZioZs=,tag:dcoAq6dPhJAdiYDniyw7rQ==,type:str]
+    version: 3.13.3
+---
+apiVersion: v1
+kind: Secret
+type: Opaque
+data:
+    password: ENC[AES256_GCM,data:GZGo/QZpFaIF5CyZf7pD7V+RKrHPm9bJezdqVzthZKtu8DpuoE2E5B5vI/bc7ngReY7Pv8O61WNxf0cA,iv:hNULBuw8EI5842adKeCHpXYNSQGzAVnBCXMWDS/JgvY=,tag:pHHGDfD3s4yBBdsiXgY++g==,type:str]
+    username: ENC[AES256_GCM,data:TsZ5J4fQcFE=,iv:b+qLln9hMw6LkUl1+Sg1dM4oBgHoQn485dXJQA9vyYQ=,tag:rsMc2cZKwDBbn4IgqUU+3g==,type:str]
+metadata:
+    name: esphome-dashboard-auth
+    namespace: homeassistant
+sops:
+    age:
+        - enc: |
+            -----BEGIN AGE ENCRYPTED FILE-----
+            YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSB4b3dtVnNycHFBeXNGUE9Q
+            L01yZTRCR2FmbHlwbnhTSEp0RkN0a0tmV1ZFCm9mUEFOc09FM0gxVDc5eFRBYS84
+            d0gwaGVIejFCY01CUUhFeEZJL24yb28KLS0tIERkRzQ5YzQ2TklyeDhoRmEyYXdv
+            dm1ZUGNqWCtlVklJa0dldkpxQ2VVaGsKczKF0G3xDAcGq5cxFM5FAYcR1P0Mw+yW
+            PS0h2Si/DsrEuM14sNKJufdfVx4IzkLuTFWtoei5cEz/jQM2/LJH3g==
+            -----END AGE ENCRYPTED FILE-----
+          recipient: age1rq7h60et6lty8yt7mlgk20y257ea977ayyhcjdgwt2rslrs7nepq6x4d9d
+    encrypted_regex: ^(data|stringData)$
+    lastmodified: "2026-11-01T20:51:13Z"
+    mac: ENC[AES256_GCM,data:zR0nDByA33BGjuezKjvksL3ah0kyfCAPm77JWSpTsmKjQsQCQE76sTEVEiiNGVT/jO4cMn3XsQBAUUVfCbAZiTl99h4US1uqntq5zD5UjvXuwxZkCCSZ0IUQ52KCJwxLyIgZObblmRNOULimcFU0qUWiw75es8BfhLppHRrpjSw=,iv:6pb4xPwBOE7hnaCTsUjMGScqJBYeVocWDDFAvPKd+iE=,tag:XPyXraS7286N4SQjPuAadQ==,type:str]
+    version: 3.13.3

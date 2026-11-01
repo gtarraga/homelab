@@ -33,6 +33,16 @@ spec:
           value: /etc/ssl/certs/ca-certificates.crt
         - name: SSL_CERT_DIR
           value: /etc/ssl/certs
+        - name: ZIGBEE2MQTT_CONFIG_MQTT_USER
+          valueFrom:
+            secretKeyRef:
+              name: mqtt-zigbee2mqtt-auth
+              key: username
+        - name: ZIGBEE2MQTT_CONFIG_MQTT_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: mqtt-zigbee2mqtt-auth
+              key: password
         readinessProbe:
           tcpSocket:
             port: 8080

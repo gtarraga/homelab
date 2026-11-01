@@ -44,6 +44,16 @@ spec:
           env:
             - name: ESPHOME_TRUSTED_DOMAINS
               value: esphome.stoneforge.dev
+            - name: ESPHOME_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: esphome-dashboard-auth
+                  key: username
+            - name: ESPHOME_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: esphome-dashboard-auth
+                  key: password
             - name: SSL_CERT_FILE
               value: /etc/ssl/certs/ca-certificates.crt
             - name: SSL_CERT_DIR
