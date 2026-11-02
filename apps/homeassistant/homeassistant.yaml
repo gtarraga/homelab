@@ -21,7 +21,7 @@ spec:
         kubernetes.io/hostname: cradle
       containers:
         - name: homeassistant
-          image: homeassistant/home-assistant@sha256:59aa8824955c9db491b75d2eebe42bd68494f80c2ec69ec0d66d9dae37d37514
+          image: homeassistant/home-assistant@sha256:23f4dfbb69ce76315dbc4de7915504f1c2dcecd7ca2648113a493a385972e133
           ports:
             - name: http
               containerPort: 8123
@@ -85,7 +85,7 @@ spec:
             name: homeassistant-emudhra-trust
       initContainers:
         - name: prepare-certificate-trust
-          image: homeassistant/home-assistant@sha256:59aa8824955c9db491b75d2eebe42bd68494f80c2ec69ec0d66d9dae37d37514
+          image: homeassistant/home-assistant@sha256:23f4dfbb69ce76315dbc4de7915504f1c2dcecd7ca2648113a493a385972e133
           imagePullPolicy: IfNotPresent
           command:
             - /usr/local/bin/python3
