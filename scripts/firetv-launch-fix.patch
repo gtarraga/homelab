@@ -1,0 +1,425 @@
+--- a/src/lib/remote.ts
++++ b/src/lib/remote.ts
+@@ -4,6 +4,7 @@
+  */
+ 
+ import { createSocket } from "dgram";
++import { randomUUID } from "node:crypto";
+ 
+ export interface RemoteConfig {
+   haUrl: string;
+@@ -17,6 +18,7 @@
+   const base = config.haUrl.replace(/\/+$/, "");
+   const res = await fetch(`${base}${path}`, {
+     ...init,
++    signal: AbortSignal.timeout(15_000),
+     headers: {
+       Authorization: `Bearer ${config.haToken}`,
+       "Content-Type": "application/json",
+@@ -24,8 +26,8 @@
+     },
+   });
+   if (!res.ok) {
+-    const text = await res.text();
+-    throw new Error(`HA ${res.status}: ${text.slice(0, 200)}`);
++    // Response bodies can contain private infrastructure details.
++    throw new Error(`Home Assistant request failed (HTTP ${res.status})`);
+   }
+   return res;
+ }
+@@ -37,53 +39,56 @@
+   });
+ }
+ 
+-async function getState(config: RemoteConfig, entityId: string): Promise<string> {
++async function getEntity(config: RemoteConfig, entityId: string) {
+   const res = await haFetch(config, `/api/states/${entityId}`);
+-  const json = (await res.json()) as { state: string };
+-  return json.state;
++  return (await res.json()) as {
++    state: string;
++    attributes?: { adb_response?: unknown };
++  };
+ }
+ 
+ async function isOff(config: RemoteConfig, entityId: string): Promise<boolean> {
+   try {
+-    const state = await getState(config, entityId);
++    const { state } = await getEntity(config, entityId);
+     return state === "off" || state === "standby" || state === "unavailable";
+   } catch {
+     return true;
+   }
+ }
+ 
+-/**
+- * Poll entity state until it is NOT "unavailable" (device reachable).
+- * Used after cold-boot to wait for Fire TV to finish booting before
+- * sending ADB commands — otherwise commands are silently lost.
+- *
+- * Returns final state string, or "unavailable" on timeout.
+- */
+-async function waitForEntityAvailable(
+-  config: RemoteConfig,
+-  entityId: string,
+-  timeoutMs = 90_000,
+-  pollIntervalMs = 3000,
+-  onProgress?: (msg: string) => void,
+-): Promise<string> {
+-  const deadline = Date.now() + timeoutMs;
+-  let lastState = "unavailable";
++const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
+ 
++/** HA can accept a command without the device executing it. Require fresh shell output. */
++async function runAdb(config: RemoteConfig, command: string): Promise<{ output: string; exitCode: number }> {
++  const marker = `CAST_${randomUUID().replace(/-/g, "")}`;
++  await callService(config, "androidtv", "adb_command", {
++    entity_id: config.entityId,
++    command: `{ ${command}; }; cast_exit=$?; printf '\\n${marker}:%s\\n' "$cast_exit"`,
++  });
++  // HA's androidtv integration publishes shell output in this entity attribute.
++  // A per-command marker prevents a previous successful response being reused.
++  const entity = await getEntity(config, config.entityId);
++  const response = entity.attributes?.adb_response;
++  if (typeof response !== "string") throw new Error("No confirmed ADB response from Fire TV");
++  const match = response.match(new RegExp(`\\n?${marker}:(\\d+)\\s*$`));
++  if (!match || match.index === undefined) throw new Error("No confirmed ADB response from Fire TV");
++  return { output: response.slice(0, match.index), exitCode: Number(match[1]) };
++}
++
++/** Probe Android itself, even if HA has a cached 'on' state or the projector was already on. */
++async function waitForAndroidReady(config: RemoteConfig, onProgress?: (msg: string) => void): Promise<void> {
++  const deadline = Date.now() + 90_000;
+   while (Date.now() < deadline) {
+     try {
+-      const state = await getState(config, entityId);
+-      lastState = state;
+-      if (state !== "unavailable") {
+-        return state;
+-      }
++      const result = await runAdb(config, 'test "$(getprop sys.boot_completed)" = 1 && pm path android >/dev/null');
++      if (result.exitCode === 0) return;
+     } catch {
+-      // HA or entity error — keep polling
++      // ADB may disconnect during boot; never treat an old HA state as readiness.
+     }
+-    onProgress?.(`Waiting for device… (${Math.ceil((deadline - Date.now()) / 1000)}s left)`);
+-    await new Promise((r) => setTimeout(r, pollIntervalMs));
++    onProgress?.("Waiting for Fire TV's Android system to finish booting…");
++    await sleep(3000);
+   }
+-
+-  return lastState;
++  throw new Error("Fire TV's Android system was not ready after 90s; check its ADB connection");
+ }
+ 
+ function parseMac(mac: string): Buffer {
+@@ -131,39 +136,53 @@
+ 
+ export async function wakeFireTV(
+   config: RemoteConfig,
+-  projectorWasOff: boolean,
++  _projectorWasOff: boolean,
+   onProgress?: (msg: string) => void,
+ ): Promise<void> {
+-  const tvOff = await isOff(config, config.entityId);
+-
+-  if (tvOff) {
+-    onProgress?.(projectorWasOff ? "Waking Fire TV…" : "Waking Fire TV…");
+-    await callService(config, "androidtv", "adb_command", {
+-      entity_id: config.entityId,
+-      command: "input keyevent 26",
+-    });
+-    // Wait for Fire TV to wake up and ADB to stabilize after power-on
+-    await new Promise((r) => setTimeout(r, 5000));
+-  } else if (projectorWasOff) {
+-    // Fire TV stayed on while projector was off (unusual with USB power)
+-    // but possible with separate power; just refresh the HDMI connection
+-    onProgress?.("Reconnecting Fire TV to Projector…");
+-    await callService(config, "androidtv", "adb_command", {
+-      entity_id: config.entityId,
+-      command: "input keyevent 3",
+-    });
+-    await new Promise((r) => setTimeout(r, 1000));
+-  } else {
+-    await callService(config, "media_player", "turn_on", { entity_id: config.entityId });
+-    await new Promise((r) => setTimeout(r, 500));
+-  }
++  await waitForAndroidReady(config, onProgress);
++  onProgress?.("Waking Fire TV…");
++  // POWER (26) toggles and can put an auto-booted device straight back to sleep.
++  const result = await runAdb(config, "input keyevent KEYCODE_WAKEUP");
++  if (result.exitCode !== 0) throw new Error("Fire TV wake command failed");
++  await sleep(500);
+ }
+ 
+-export async function sendIntent(config: RemoteConfig, intent: string): Promise<void> {
+-  await callService(config, "androidtv", "adb_command", {
+-    entity_id: config.entityId,
+-    command: intent,
+-  });
++export async function sendIntent(
++  config: RemoteConfig,
++  intent: string,
++  onProgress?: (msg: string) => void,
++): Promise<void> {
++  const packageName =
++    intent.match(/\s-n\s+([\w.]+)\//)?.[1] ?? intent.match(/\s([a-zA-Z_]\w*(?:\.[a-zA-Z_]\w*)+)\s*$/)?.[1];
++  if (!/^am start\b/.test(intent) || !packageName)
++    throw new Error("Cannot verify the target app for this launch command");
++  const command = /\s-W(?:\s|$)/.test(intent) ? intent : intent.replace(/^am start\b/, "am start -W");
++  const result = await runAdb(config, command);
++  if (
++    result.exitCode !== 0 ||
++    /(?:^|\n)\s*(?:Error\b|Exception\b)|\b(?:SecurityException|ActivityNotFoundException|AndroidRuntimeException)\b|unable to resolve Intent|does not exist|Status:\s*timeout/i.test(
++      result.output,
++    )
++  ) {
++    throw new Error("Android could not launch the requested app; check that it is installed and supports this link");
++  }
++
++  onProgress?.("Verifying the app is open on Fire TV…");
++  const deadline = Date.now() + 15_000;
++  const escapedPackage = packageName.replace(/\./g, "\\.");
++  const foreground = new RegExp(
++    `(?:mResumedActivity|topResumedActivity|mFocusedActivity)\\s*[:=]\\s*[^\\n]*[\\s{]${escapedPackage}/`,
++  );
++  while (Date.now() < deadline) {
++    try {
++      const activity = await runAdb(config, "dumpsys activity activities");
++      if (activity.exitCode === 0 && foreground.test(activity.output)) return;
++    } catch {
++      // Retry a transient ADB disconnect, but never report an unverified launch.
++    }
++    await sleep(1000);
++  }
++  throw new Error("The requested app did not reach the foreground; Fire TV may still be at its menu");
+ }
+ 
+ export async function wakeAndLaunch(
+@@ -171,31 +190,7 @@
+   intent: string,
+   onProgress?: (msg: string) => void,
+ ): Promise<void> {
+-  const projWasOff = await wakeProjector(config, onProgress);
+-
+-  // When projector was off, Fire TV also lost power (USB-powered from projector).
+-  // Fire TV needs 30-60s to cold-boot. Poll until HA can reach it via ADB,
+-  // otherwise ADB commands are silently lost.
+-  if (projWasOff) {
+-    onProgress?.("Waiting for Fire TV to boot…");
+-    const state = await waitForEntityAvailable(config, config.entityId, 90_000, 3000, onProgress);
+-
+-    if (state === "unavailable") {
+-      throw new Error("Fire TV didn't come online after 90s — is it still booting? Try again.");
+-    }
+-
+-    // Fire TV may auto-boot when power is applied (state becomes "on" or "standby").
+-    // Only send wake command if it's actually off/standby.
+-    if (state === "on" || state === "playing" || state === "paused" || state === "idle") {
+-      onProgress?.("Fire TV already awake, launching…");
+-      // Short settle time for ADB to stabilize
+-      await new Promise((r) => setTimeout(r, 3000));
+-    } else {
+-      await wakeFireTV(config, projWasOff, onProgress);
+-    }
+-  } else {
+-    await wakeFireTV(config, projWasOff, onProgress);
+-  }
+-
+-  await sendIntent(config, intent);
++  const projectorWasOff = await wakeProjector(config, onProgress);
++  await wakeFireTV(config, projectorWasOff, onProgress);
++  await sendIntent(config, intent, onProgress);
+ }
+--- a/mobile/tsconfig.json
++++ b/mobile/tsconfig.json
+@@ -11,5 +11,5 @@
+     "rootDir": "..",
+     "types": ["node"]
+   },
+-  "include": ["cast-service.ts", "cast-service.test.ts"]
++  "include": ["cast-service.ts", "cast-service.test.ts", "remote.test.ts"]
+ }
+--- /dev/null
++++ b/mobile/remote.test.ts
+@@ -0,0 +1,179 @@
++import assert from "node:assert/strict";
++import { test, type TestContext } from "node:test";
++import { sendIntent, wakeAndLaunch } from "../src/lib/remote";
++import { createCastOperation } from "./cast-service";
++
++const config = {
++  haUrl: "http://ha.test",
++  haToken: "test",
++  entityId: "media_player.fire_tv",
++};
++const intent = 'am start -a android.intent.action.VIEW -d "stremio:///detail/series/tt14688458" com.stremio.one';
++
++function homeAssistant(
++  t: TestContext,
++  options: {
++    bootAfter?: number;
++    launchError?: string;
++    dropped?: boolean;
++    foreground?: string;
++    transientForeground?: boolean;
++    state?: string;
++  } = {},
++) {
++  let elapsed = 0;
++  let response = "old-command-output";
++  let bootChecks = 0;
++  let foregroundChecks = 0;
++  const commands: string[] = [];
++  t.mock.method(Date, "now", () => elapsed);
++  t.mock.method(globalThis, "setTimeout", ((cb: () => void, delay: number) => {
++    elapsed += delay;
++    queueMicrotask(cb);
++    return 0;
++  }) as unknown as typeof setTimeout);
++  t.mock.method(globalThis, "fetch", async (url: string, init?: RequestInit) => {
++    if (init?.method === "POST") {
++      const body = JSON.parse(String(init.body)) as { command?: string };
++      if (body.command) {
++        const command = body.command;
++        commands.push(command);
++        let output = "";
++        let exit = 0;
++        if (command.includes("getprop sys.boot_completed")) {
++          bootChecks++;
++          exit = bootChecks >= (options.bootAfter ?? 1) ? 0 : 1;
++        }
++        if (command.includes("am start"))
++          output =
++            options.launchError ?? "Starting: Intent { dat=stremio:///detail/series/tt14688458 pkg=com.stremio.one }";
++        if (command.includes("dumpsys activity activities")) {
++          foregroundChecks++;
++          output =
++            options.foreground ??
++            (options.transientForeground && foregroundChecks === 1
++              ? "mResumedActivity: ActivityRecord{12 com.amazon.tv.launcher/.MainActivity}"
++              : "mResumedActivity: ActivityRecord{12 com.stremio.one/.MainActivity}");
++        }
++        const marker = command.match(/CAST_[a-f0-9]+/u)?.[0];
++        if (!options.dropped) response = marker ? `${output}\n${marker}:${exit}\n` : output;
++      }
++      return new Response("[]", { status: 200 });
++    }
++    assert.ok(url.includes(`/api/states/${config.entityId}`));
++    // A cached HA state can say 'on' while Android is still booting.
++    return Response.json({
++      entity_id: config.entityId,
++      state: options.state ?? "on",
++      attributes: { adb_response: response.trim() },
++    });
++  });
++  return {
++    commands,
++    bootChecks: () => bootChecks,
++    foregroundChecks: () => foregroundChecks,
++  };
++}
++
++test("HTTP 200 containing an Android launch error must fail", async (t) => {
++  homeAssistant(t, {
++    launchError: "Error: Activity not started, unable to resolve Intent",
++  });
++  await assert.rejects(sendIntent(config, intent), /launch|command|Android/i);
++});
++
++test("a silently dropped ADB command must not report success using stale output", async (t) => {
++  homeAssistant(t, { dropped: true });
++  await assert.rejects(sendIntent(config, intent), /confirm|response|ADB/i);
++});
++
++test("an HA state of on must not skip boot readiness; wake must never toggle power", async (t) => {
++  const ha = homeAssistant(t, { bootAfter: 3 });
++  await wakeAndLaunch(config, intent);
++  assert.equal(ha.bootChecks(), 3);
++  assert.ok(ha.commands.some((command) => command.includes("KEYCODE_WAKEUP")));
++  assert.ok(ha.commands.every((command) => !/input keyevent (26|3)\b/u.test(command)));
++  const launchIndex = ha.commands.findIndex((command) => command.includes("am start"));
++  assert.equal(
++    ha.commands.slice(0, launchIndex).filter((command) => command.includes("getprop sys.boot_completed")).length,
++    3,
++  );
++});
++
++test("boot timeout fails without ever launching the app", async (t) => {
++  const ha = homeAssistant(t, { bootAfter: Infinity });
++  await assert.rejects(wakeAndLaunch(config, intent), /ready|boot/i);
++  assert.ok(ha.commands.every((command) => !command.includes("am start")));
++});
++
++test("launch accepted but Fire TV stuck in launcher must fail", async (t) => {
++  homeAssistant(t, {
++    foreground: "mResumedActivity: ActivityRecord{12 com.amazon.tv.launcher/.MainActivity}",
++  });
++  await assert.rejects(sendIntent(config, intent), /foreground/i);
++});
++
++test("a background Stremio activity is not evidence that Stremio is open", async (t) => {
++  homeAssistant(t, {
++    foreground:
++      "Hist #0: ActivityRecord{12 com.stremio.one/.MainActivity}\nmResumedActivity: ActivityRecord{34 com.amazon.tv.launcher/.MainActivity}",
++  });
++  await assert.rejects(sendIntent(config, intent), /foreground/i);
++});
++
++test("successful launch waits for the target foreground activity", async (t) => {
++  const ha = homeAssistant(t, { transientForeground: true });
++  await sendIntent(config, intent);
++  assert.equal(ha.foregroundChecks(), 2);
++  assert.ok(ha.commands.some((command) => command.includes("am start -W")));
++});
++
++test("explicit component intents verify their package too", async (t) => {
++  const ha = homeAssistant(t, {
++    foreground: "topResumedActivity=ActivityRecord{12 com.limelight/.PcView}",
++  });
++  await sendIntent(config, "am start -n com.limelight/.PcView -f 0x10000020");
++  assert.equal(ha.foregroundChecks(), 1);
++});
++
++test("a stale unavailable HA state cannot toggle an already booted Fire TV off", async (t) => {
++  const ha = homeAssistant(t, { state: "unavailable" });
++  await wakeAndLaunch(config, intent);
++  assert.ok(ha.commands.some((command) => command.includes("KEYCODE_WAKEUP")));
++  assert.ok(ha.commands.every((command) => !/input keyevent 26\b/u.test(command)));
++});
++
++test("an app with a similar package suffix is not the target app", async (t) => {
++  homeAssistant(t, {
++    foreground: "mResumedActivity: ActivityRecord{12 other.com.stremio.one/.MainActivity}",
++  });
++  await assert.rejects(sendIntent(config, intent), /foreground/i);
++});
++
++test("Android SecurityException in a nominally successful command must fail", async (t) => {
++  homeAssistant(t, {
++    launchError: "java.lang.SecurityException: Permission Denial",
++  });
++  await assert.rejects(sendIntent(config, intent), /launch|Android/i);
++});
++
++test("Stremio cast operation reports failed when the device stays at the menu", async (t) => {
++  homeAssistant(t, {
++    foreground: "mResumedActivity: ActivityRecord{12 com.amazon.tv.launcher/.MainActivity}",
++  });
++  const cast = createCastOperation(
++    {
++      resolve: async () => ({
++        platform: "stremio",
++        title: "Silo",
++        intent,
++        url: "",
++      }),
++      launch: (command) => wakeAndLaunch(config, command),
++    },
++    ["stremio"],
++    "ES",
++  );
++  const result = await cast({ kind: "title", title: "Silo" }, () => {});
++  assert.equal(result.status, "failed");
++});

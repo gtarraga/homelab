@@ -10,3 +10,8 @@ resources:
   - esphome.yaml
   - node-trust.yaml
   - cast-media.yaml
+configMapGenerator:
+  - name: cast-media-remote
+    namespace: homeassistant
+    files:
+      - remote.js=cast-media/remote.js

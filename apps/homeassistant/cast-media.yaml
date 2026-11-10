@@ -122,16 +122,21 @@ spec:
         name: node-trust-script
       - emptyDir: {}
         name: node-patched-trust
-      - configMap:
+      - projected:
           defaultMode: 420
-          items:
-          - key: cast-service.js
-            path: mobile/cast-service.js
-          - key: remote.js
-            path: src/lib/remote.js
-          - key: resolve.js
-            path: src/lib/resolve.js
-          - key: justwatch.js
-            path: src/justwatch.js
-          name: cast-media-code
+          sources:
+          - configMap:
+              name: cast-media-code
+              items:
+              - key: cast-service.js
+                path: mobile/cast-service.js
+              - key: resolve.js
+                path: src/lib/resolve.js
+              - key: justwatch.js
+                path: src/justwatch.js
+          - configMap:
+              name: cast-media-remote
+              items:
+              - key: remote.js
+                path: src/lib/remote.js
         name: code
