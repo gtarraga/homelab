@@ -1,0 +1,31 @@
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+    namespace: infra
+    name: synology-dsm
+spec:
+    entryPoints:
+        # The public tunnel targets only `web`; DSM must not be routed there.
+        - websecure
+    routes:
+        - match: ENC[AES256_GCM,data:9OiEfD+0SUUVZK8saHCWQUz0Byli+OCU7Yhashbg,iv:Z9VzSwrGFlnJftSyJAPSrQXPRgsjbqKsDOgYRIUTDyo=,tag:lp12/j1txBIlHBkF0BFS3w==,type:str]
+          kind: ENC[AES256_GCM,data:JdYEWA==,iv:0BkxCg6iMbYGoHAp3lqusR0WZR+Od5dal/NWRS9hM38=,tag:LbXn+IXkw1D0D1sEhdRgog==,type:str]
+          services:
+            - name: ENC[AES256_GCM,data:HRJPG2uHo1AKk6fx,iv:dSupTaSvvDK9iRchkpToHDgcMwexiizJIrmDoVsDWDA=,tag:7PL2ENxD+apw05nHdupLfA==,type:str]
+              port: ENC[AES256_GCM,data:oHMY5g==,iv:VBWi2cl+kZK3lEiKdKH+hwjopmVYjt4qeIoxzFvfEo4=,tag:UtOZwuPhcqfIuMXJaAx1hg==,type:int]
+    tls: {}
+sops:
+    age:
+        - enc: |
+            -----BEGIN AGE ENCRYPTED FILE-----
+            YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSBWcnVGUEh1czJxb2VKbHZP
+            bkJtNlJxOEZicTJCSlBoR0Z0dm9xWU8ycFhrCmx4MndtOEJHSXFVOXYzeHl6d01V
+            SmNqQjNwbzN5R0twQU9hbFluS210YkUKLS0tIHkrYUhIM1JRTkFKUEF5TTU5QjI3
+            WHlUOEpZN2pLaEhLS1UvaFZQdzdLd00KRp42zQtcVNLyJYs64hkYUX5pn19ADkHE
+            VZogBAfKS9/QU1A/JMXAFABu62Uc9kz3eSRnhekC1Rw42QHJpxuxIA==
+            -----END AGE ENCRYPTED FILE-----
+          recipient: age1rq7h60et6lty8yt7mlgk20y257ea977ayyhcjdgwt2rslrs7nepq6x4d9d
+    encrypted_regex: ^(endpoints|routes)$
+    lastmodified: "2026-11-17T18:48:09Z"
+    mac: ENC[AES256_GCM,data:+zdIfXLPEQJtNVDn3pUtB3fltMngtoXpeliE9BQgeDTLeEzElbSOefgNTjz9DgDLlgf/n3aYWQG3xKSFTX16N7coxu0oSz1dRg+2ji7SgFoOdYsw5p5avywMlrS70CNZBLrU5y8UFV3qgjicstwarytaovRDSb6Cl4GTN+2Ox/Q=,iv:PsIG+knjr2ZakYepLE4ksETWi1WFkhRDdoHKhB1BZgY=,tag:RJC4oqRw1aaWNGtG+d7t0w==,type:str]
+    version: 3.13.3
