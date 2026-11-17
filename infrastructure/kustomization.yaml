@@ -11,6 +11,7 @@ resources:
   - networking/traefik
   - networking/metallb
   - networking/unifi
+  - networking/synology
   - storage/longhorn
   - controllers/cert-manager
   - controllers/emudhra-trust-policy.yaml

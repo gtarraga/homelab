@@ -1,0 +1,33 @@
+apiVersion: discovery.k8s.io/v1
+kind: EndpointSlice
+metadata:
+    namespace: infra
+    name: synology-dsm
+    labels:
+        kubernetes.io/service-name: synology-dsm
+        endpointslice.kubernetes.io/managed-by: homelab
+addressType: IPv4
+ports:
+    - name: http
+      protocol: TCP
+      port: 5000
+endpoints:
+    - addresses:
+        - ENC[AES256_GCM,data:nF7qjFuAHL+OVItVvQ==,iv:5nu/D2XBKMcNmiC+FPrWXGiXtevjUaIJ2wSaA4XOP/c=,tag:OQjnhoT3Ir8tdfCpDn3GwQ==,type:str]
+      conditions:
+        ready: ENC[AES256_GCM,data:fwwZsg==,iv:LCU/s1QHa0SwRRX7GxJ67m4DqVHy7qFxmoSTb4TPfIc=,tag:UwDFe1KYd4r1oI1ewVQCUA==,type:bool]
+sops:
+    age:
+        - enc: |
+            -----BEGIN AGE ENCRYPTED FILE-----
+            YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSBTNEFaY1NZWWZsSGFHM2FS
+            Qk9zNTdCU3NmQkdOb1grd2RQN0JraU41SndFCk5mNFdZRGh4TG9acU94Y1Y2Z3Bm
+            T09RSDM4dzdjZ3g2eVNuaC9BQmNqWW8KLS0tIEhtNEN2RklxcUp2ZGtVZGcvRGp6
+            WjlOa0Nwc1pqR2l1VGlwSFFoNXN0M28KpfqNNvFG7FLS/wKAG/OoeDdBU9WCsgqb
+            BgkO0yThIWNZqGCg5bxL9O/sVZ5Pke67RwbRI0huZ2yzevkXUkbkSg==
+            -----END AGE ENCRYPTED FILE-----
+          recipient: age1rq7h60et6lty8yt7mlgk20y257ea977ayyhcjdgwt2rslrs7nepq6x4d9d
+    encrypted_regex: ^(endpoints|routes)$
+    lastmodified: "2026-11-17T18:48:09Z"
+    mac: ENC[AES256_GCM,data:ZNTTHCbpsLbTBGtpnEOHO98VRYDiQQMVW1Mv1dWZYSrH8VOLn5YjLAISaq5k5+ab9y5DjIhfX7SpV780dU0VO21w+ziKWY/DigU49KPLChKgklmQL2IVOtFki12if/fGLNP64rStojD0mCnVTQW94EewQKp629V2zaseJ0Fjv5o=,iv:99ml5dS6oroZZ48vtbiqps+W/AwantRdGdPzpAmvtu4=,tag:u/Bps2d9BfqTmUgoAruGMA==,type:str]
+    version: 3.13.3
