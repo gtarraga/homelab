@@ -1,0 +1,30 @@
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+    name: synology-immich
+    namespace: infra
+spec:
+    entryPoints:
+        - websecure
+    routes:
+        - match: ENC[AES256_GCM,data:3lk+gx8gJtXM5D2sUTkIA8Po3TNUVYvrGMk6YGk=,iv:tCzRgb5gPX4Hljpol0lRgL84h1+zseHGmK1TK9Zph4E=,tag:JkXQ0U2T6oPhxbQKT0S1sA==,type:str]
+          kind: ENC[AES256_GCM,data:FieaoQ==,iv:eqOTXCLKH1oYXcguznqtLhi4E64/kCTQgajqwrAojsY=,tag:UjmiMDFPHXGJrmKlPOgKBg==,type:str]
+          services:
+            - name: ENC[AES256_GCM,data:5D5t507mYtNzWM4YG2XF,iv:VIFFOktiGsdRouKN+Sve9Gq3Vj8F4fRoamEjGo6+MRw=,tag:fUVmZxK0PHSWxRwOH4XjHg==,type:str]
+              port: ENC[AES256_GCM,data:1416fw==,iv:TWY1NHBuJcf7eggJlebG5G98IjptCfIVCmm6BifcrwQ=,tag:lJMquJQHjWp+uopFHPIQFw==,type:int]
+    tls: {}
+sops:
+    age:
+        - enc: |
+            -----BEGIN AGE ENCRYPTED FILE-----
+            YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSBYRThybnIwdTh6V1FCcyt6
+            VFAyU0hpY0JzVWNuSUZrbW1EYnhiQ1Mra0E0CldZamJYeGFJSUVEb3VKRVVOYlc3
+            ZWZMMjRObXdROEc2SXBLQ21oMUJRbFUKLS0tIFpWdk44eWgzbldIRUJ0UVlzS2Nm
+            NEpJS1lRV2QwZVBIOXYvWjRwZTdsZ1UKcQ2AxP2TEPv+IShY9YW6eLZkJlR5cw+S
+            w/Lb0OFAWMeh9IrMWpYwMRVhYhN3ux8JPjhwqp4gsE4SENOngEpElw==
+            -----END AGE ENCRYPTED FILE-----
+          recipient: age1rq7h60et6lty8yt7mlgk20y257ea977ayyhcjdgwt2rslrs7nepq6x4d9d
+    encrypted_regex: ^(endpoints|routes)$
+    lastmodified: "2026-11-19T19:18:18Z"
+    mac: ENC[AES256_GCM,data:A/NEST2caDoUEF+FiznHqrKWyrklJdTrKGVepsT5jQB3brJnQssW/aXX5a+ap7+r+EGIljpJbTcn5qPLh2VgsP2RnP4XDZKkYkTRdpFuKrrn6b+8V9oecqM2uxNGHDPb6BP7fZWsMFxjY7iw0QxZ+rkAnUXRTvLXwD+rJef5ub4=,iv:kjiLKNQD8lXbcNgliyP5700m3rT3YD6e30kAmmvwPZI=,tag:brGEtNor2qlWtc8GOt8faA==,type:str]
+    version: 3.13.3

@@ -1,0 +1,33 @@
+apiVersion: discovery.k8s.io/v1
+kind: EndpointSlice
+metadata:
+    name: synology-immich
+    namespace: infra
+    labels:
+        kubernetes.io/service-name: synology-immich
+        endpointslice.kubernetes.io/managed-by: homelab
+addressType: IPv4
+ports:
+    - name: http
+      protocol: TCP
+      port: 2283
+endpoints:
+    - addresses:
+        - ENC[AES256_GCM,data:Bs9Qugq+CsLB+8Eh4g==,iv:a3/TkjJouqVfYt3y3Vu0sD8B1lZb4ykALhf83PDI4xU=,tag:CbAxhyjteKmUv9HptTnS4w==,type:str]
+      conditions:
+        ready: ENC[AES256_GCM,data:VCHWFQ==,iv:bI1s8QHRwg02RgH/qpTkN+xhVFjz1j2sNULMymXq1BI=,tag:QtQMOKuc52L3t5UbuRGKMA==,type:bool]
+sops:
+    age:
+        - enc: |
+            -----BEGIN AGE ENCRYPTED FILE-----
+            YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSA1QWlrSHdXOWhJZC96YjZr
+            dzRkVkJkbVRDUHVCSWljdnVTdWJtRVVzZVFJCmU3Vnd3d0U4VlhibE5SOGRIbW5G
+            T1RsTTBCZXJaV2w0UC9KMXdKU0NNMk0KLS0tIC9RcXRwTnpjL0xQZ21SU21PbTN2
+            T3hoMjVheTRVeDMrWERSUnphUlZ0MGMKOzZhmrXoEqcWbKwpXyHDZrMrAjgIQf9D
+            3auRXHGdQ9DngWP21PVLjwdCDjjhIBCmUdnJ6pOPBpV9QqqmOQhi8g==
+            -----END AGE ENCRYPTED FILE-----
+          recipient: age1rq7h60et6lty8yt7mlgk20y257ea977ayyhcjdgwt2rslrs7nepq6x4d9d
+    encrypted_regex: ^(endpoints|routes)$
+    lastmodified: "2026-11-19T19:18:18Z"
+    mac: ENC[AES256_GCM,data:fQKjsSBX4SuAHAuObQ8SuBuhxYqne5ePpdjNZrIvk1GifdLc8fI60Id+CtKgtIIeFIu8OJY954gfAVgU8EFNKwfEm1KU5LshcqBoV7iRKLUeY0EYgiOGyXgIvDqbHteZzrO8y663pyge1TNNefMHSWX1oxHbLDKGhAoPnZCl3R8=,iv:jG+WkadV/iXC7cjbOo6UEdJ3jGmgdG/cKujlzNAFijo=,tag:NquPyZGW2f2GSNh7bjI3eA==,type:str]
+    version: 3.13.3
